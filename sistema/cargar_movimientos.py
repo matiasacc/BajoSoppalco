@@ -181,7 +181,8 @@ def rebuild_stock(wb):
                  f'"* Falta cant. por empaque",'
                  f'IF($D{r}="A relevar","* Sin stock inicial",'
                  f'IF($G{r}<0,"* Negativo",'
-                 f'IF(AND(ISNUMBER($L{r}),$G{r}<=$L{r}),"* Bajo mínimo","OK"))))'),
+                 f'IF($G{r}<=0,"* Sin stock",'
+                 f'IF(AND(ISNUMBER($L{r}),$G{r}<=$L{r}),"* Bajo mínimo","OK")))))'),
         }
         for c, v in f.items():
             ws.cell(row=r, column=c).value = v
@@ -190,6 +191,16 @@ def rebuild_stock(wb):
             ws.cell(row=r, column=c).alignment = Alignment(horizontal="center", vertical="center")
         ws.cell(row=r, column=7).font = F_B
     ws.auto_filter.ref = f"A1:M{n}"
+    # colores: rojo = sin stock / negativo, amarillo = bajo mínimo
+    from openpyxl.formatting.rule import FormulaRule
+    if n >= 2:
+        rango = f"A2:M{n}"
+        ws.conditional_formatting.add(rango, FormulaRule(
+            formula=['OR($M2="* Sin stock",$M2="* Negativo")'],
+            fill=PatternFill("solid", fgColor="F8D7DA"), font=Font(name=FONT, size=10, color="9C0006")))
+        ws.conditional_formatting.add(rango, FormulaRule(
+            formula=['$M2="* Bajo mínimo"'],
+            fill=PatternFill("solid", fgColor="FFF2CC"), font=Font(name=FONT, size=10, color="7F6000")))
     return ws
 
 
@@ -433,6 +444,8 @@ def compute_stock(items, movs):
             s["estado"] = "Sin stock inicial"
         elif s["act"] < 0:
             s["estado"] = "Negativo"
+        elif s["act"] <= 0:
+            s["estado"] = "Sin stock"
         elif it["min"] is not None and s["act"] <= it["min"]:
             s["estado"] = "Bajo mínimo"
         else:
@@ -622,16 +635,19 @@ def build_html(items, movs, st, path=None, tema=None):
 
     # tabla stock
     rows_s = []
-    for c in sorted(items, key=lambda c: (st[c]["estado"] == "OK", c)):
+    ROJO, AMAR = ("Sin stock", "Negativo"), ("Bajo mínimo",)
+    rango = lambda e: 0 if e in ROJO else 1 if e in AMAR else 3 if e == "OK" else 2
+    for c in sorted(items, key=lambda c: (rango(st[c]["estado"]), c)):
         it, s = items[c], st[c]
         ini = "A relevar" if it["ini"] is None else ("*" if it["ini"] == FALTA else fmt(it["ini"]))
         act = "*" if s["falta"] else fmt(s["act"])
         emp = "" if s["falta"] else en_empaques(s["act"], it)
         est = s["estado"]
-        cls = " class=neg" if est == "Negativo" else ""
+        cls = ""
         mark = "" if est == "OK" else "* "
+        trc = " class=rojo" if est in ROJO else " class=amar" if est in AMAR else ""
         rows_s.append(
-            f"<tr><td>{c}</td><td>{html.escape(it['ins'])}</td><td>{html.escape(it['sec'])}</td>"
+            f"<tr{trc}><td>{c}</td><td>{html.escape(it['ins'])}</td><td>{html.escape(it['sec'])}</td>"
             f"<td class=c>{html.escape(it['ubi'])}</td><td class=c>{html.escape(it['ub'])}</td>"
             f"<td class=n>{ini}</td><td class=n>{fmt(s['ent'])}</td><td class=n>{'*' if s['falta'] else fmt(s['sal'])}</td>"
             f"<td class=n><b{cls}>{act}</b></td><td class=n>{emp or '–'}</td>"
@@ -656,9 +672,9 @@ def build_html(items, movs, st, path=None, tema=None):
 <title>Inventario Bajo Soppalco</title>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <style>
-:root{{--bg:#fff;--fg:#1d1d1d;--mut:#666;--ln:#d6d6d6;--hd:#f2f2f2;--ac:#3a3a3a;--neg:#b00020}}
-@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#383838;--hd:#222;--ac:#cfcfcf;--neg:#ff6b7f}}}}
-:root[data-theme="dark"]{{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#383838;--hd:#222;--ac:#cfcfcf;--neg:#ff6b7f}}
+:root{{--bg:#fff;--fg:#1d1d1d;--mut:#666;--ln:#d6d6d6;--hd:#f2f2f2;--ac:#3a3a3a;--neg:#b00020;--rbg:#f8d7da;--rfg:#9c0006;--abg:#fff2cc;--afg:#7f6000}}
+@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#383838;--hd:#222;--ac:#cfcfcf;--neg:#ff6b7f;--rbg:#4a1d22;--rfg:#ffb3bb;--abg:#463a12;--afg:#ffe08a}}}}
+:root[data-theme="dark"]{{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#383838;--hd:#222;--ac:#cfcfcf;--neg:#ff6b7f;--rbg:#4a1d22;--rfg:#ffb3bb;--abg:#463a12;--afg:#ffe08a}}
 *{{box-sizing:border-box}}
 body{{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 Arial,Helvetica,sans-serif}}
 main{{max-width:1100px;margin:0 auto;padding:24px 16px 48px}}
@@ -673,6 +689,8 @@ th,td{{border:1px solid var(--ln);padding:4px 6px;vertical-align:middle}}
 th{{background:var(--hd);font-weight:bold;text-align:left;font-size:12px}}
 td.n{{text-align:right;font-variant-numeric:tabular-nums}} td.c{{text-align:center}}
 .neg{{color:var(--neg)}}
+tr.rojo td{{background:var(--rbg);color:var(--rfg)}} tr.amar td{{background:var(--abg);color:var(--afg)}}
+.kpi .k-rojo b{{color:var(--rfg)}} .kpi .k-amar b{{color:var(--afg)}}
 .spark rect{{fill:var(--ac)}}
 .chart{{width:100%;max-width:700px;height:auto}} .chart rect{{fill:var(--ac)}}
 .chart .lb,.chart .ax{{font-size:10px;text-anchor:middle;fill:var(--mut)}} .chart .base{{stroke:var(--ln)}}
@@ -684,7 +702,9 @@ td.n{{text-align:right;font-variant-numeric:tabular-nums}} td.c{{text-align:cent
 <div><b>{len(items)}</b><span>insumos</span></div>
 <div><b>{n_sal}</b><span>salidas registradas</span></div>
 <div><b>{n_ent}</b><span>entradas registradas</span></div>
-<div><b>{len(alert)}</b><span>insumos con observación (*)</span></div>
+<div class="k-rojo"><b>{sum(1 for c in items if st[c]["estado"] in ("Sin stock", "Negativo"))}</b><span>sin stock</span></div>
+<div class="k-amar"><b>{sum(1 for c in items if st[c]["estado"] == "Bajo mínimo")}</b><span>bajo mínimo</span></div>
+<div><b>{sum(1 for c in items if st[c]["estado"] not in ("OK", "Sin stock", "Negativo", "Bajo mínimo"))}</b><span>con datos a completar (*)</span></div>
 </div>
 
 
@@ -697,7 +717,8 @@ td.n{{text-align:right;font-variant-numeric:tabular-nums}} td.c{{text-align:cent
 <h2>Stock actual</h2>
 <div class="tw"><table><thead><tr><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Unidad</th><th>Inicial</th>
 <th>Entradas</th><th>Salidas</th><th>Actual</th><th>Empaques cerrados + sueltas</th><th>Mínimo</th><th>Estado</th></tr></thead><tbody>{"".join(rows_s)}</tbody></table></div>
-<p class="note">* Sin stock inicial: insumo no relevado, el saldo arranca en 0 y da negativo. * Negativo: salió más de lo relevado (revisar conteo o conversión).</p>
+<p class="note">Rojo: sin stock o negativo. Amarillo: en o por debajo del stock mínimo (se define en Administración → Maestro).
+* Sin stock inicial: insumo no relevado, el saldo arranca en 0. * Negativo: salió más de lo registrado (revisar conteo o conversión).</p>
 
 <h2>Retiros por persona</h2>
 <div class="tw"><table><thead><tr><th>Persona</th><th>Retiros</th><th>Insumos más retirados</th></tr></thead><tbody>{"".join(rows_p)}</tbody></table></div>

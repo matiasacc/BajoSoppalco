@@ -7,9 +7,9 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="256x256" href="/icono.png">
 <style>
-:root{--bg:#fff;--fg:#1d1d1d;--mut:#666;--ln:#d0d0d0;--hd:#f2f2f2;--ac:#2f2f2f;--acf:#fff;--ok:#1d6b2f;--err:#b00020;--warn:#8a5a00;--sel:#eef3f8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33}}
-:root[data-theme="dark"]{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33}
+:root{--bg:#fff;--fg:#1d1d1d;--mut:#666;--ln:#d0d0d0;--hd:#f2f2f2;--ac:#2f2f2f;--acf:#fff;--ok:#1d6b2f;--err:#b00020;--warn:#8a5a00;--sel:#eef3f8;--rbg:#f8d7da;--rfg:#9c0006;--abg:#fff2cc;--afg:#7f6000}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33;--rbg:#4a1d22;--rfg:#ffb3bb;--abg:#463a12;--afg:#ffe08a}}
+:root[data-theme="dark"]{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33;--rbg:#4a1d22;--rfg:#ffb3bb;--abg:#463a12;--afg:#ffe08a}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 Arial,Helvetica,sans-serif}
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:2px solid var(--ac)}
@@ -39,6 +39,10 @@ input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
 .sug div:hover,.sug div.act{background:var(--sel)}
 .sug small{color:var(--mut);white-space:nowrap}
 .card{border:1px solid var(--ln);border-left:4px solid var(--ac);padding:8px 10px;margin:-4px 0 12px;font-size:13px}
+.card.rojo{background:var(--rbg);color:var(--rfg);border-left-color:var(--rfg)} .card.amar{background:var(--abg);color:var(--afg);border-left-color:var(--afg)}
+.card.rojo .mut,.card.amar .mut{color:inherit;opacity:.85}
+.mt tr.rojo td{background:var(--rbg)} .mt tr.amar td{background:var(--abg)}
+.mt tr.rojo td.st{color:var(--rfg);font-weight:bold} .mt tr.amar td.st{color:var(--afg);font-weight:bold}
 .card:empty{display:none}
 .msg{padding:8px 10px;margin:10px 0;border:1px solid}
 .msg:empty{display:none}
@@ -182,7 +186,7 @@ tr.flash td{animation:fl 1s ease-out}
      <span class="mut">Editar en la celda y tocar Guardar en la fila. Las cantidades van en la unidad base.</span></div>
      <div class="tw"><table class="mt">
       <thead><tr><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Unidad base</th><th>Empaque 1</th><th>Cant. x emp. 1</th><th>Empaque 2</th><th>Cant. x emp. 2</th>
-      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo</th><th>Observaciones</th><th>Código de barras</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
+      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo (u. base)</th><th>Observaciones</th><th>Código de barras</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
       <tbody id="mt"></tbody>
      </table></div>
    </div>
@@ -369,7 +373,8 @@ function stockTxt(i){
   if(i.act===null) return `<b>Stock: s/d</b> <span class=mut>(${esc(i.estado)})</span>`;
   let t = `<b>Stock: ${fmt(i.act)} ${esc(i.ub)}</b>`;
   const e = enEmp(i); if(e) t += ` <span class=mut>= ${esc(e)}</span>`;
-  if(i.estado!=="OK") t += ` · <span class=mut>* ${esc(i.estado)}</span>`;
+  if(i.estado!=="OK") t += ` · <b>* ${esc(i.estado)}</b>`;
+  if(i.min !== null && i.min !== undefined) t += ` <span class=mut>(mínimo ${fmt(i.min)})</span>`;
   return t;
 }
 function buscar(){
@@ -388,7 +393,8 @@ function elegir(cod){
   uniDefault(i);
   showCard(cod); $("cant").focus(); checkAviso();
 }
-function showCard(cod){ const i = IT[cod]; $("card").innerHTML = `${stockTxt(i)}<br><span class=mut>${esc(i.sec||"–")} · Ubic. ${esc(i.ubi||"–")}</span>`; }
+const claseEstado = e => (e === "Sin stock" || e === "Negativo") ? "rojo" : e === "Bajo mínimo" ? "amar" : "";
+function showCard(cod){ const i = IT[cod]; $("card").className = "card " + claseEstado(i.estado); $("card").innerHTML = `${stockTxt(i)}<br><span class=mut>${esc(i.sec||"–")} · Ubic. ${esc(i.ubi||"–")}</span>`; }
 $("buscar").oninput = buscar;
 $("buscar").onkeydown = e => {
   const ds = [...$("sug").querySelectorAll("div[data-c]")];
@@ -592,12 +598,14 @@ async function loadMaestro(){
   const r = await api("/api/admin/maestro"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
   M = r.d.items; renderMaestro();
 }
-function cell(k, v, cls){ return `<td><input data-f="${k}" class="${cls==="w"?"w":""}" value="${esc(v??"")}" ${cls==="n"?'inputmode="decimal" style="text-align:right;min-width:70px"':""}></td>`; }
+const PH = {ins:"Insumo", sec:"Sector", ubi:"Ubic.", ub:"Unidad base", emp:"Empaque 1", fac:"Cant.", emp2:"Empaque 2", fac2:"Cant.",
+            sie:"Cajas", sis:"Sueltas", min:"Mínimo (u. base)", obs:"Observaciones", bar:"Cód. barras"};
+function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls==="w"?"w":""}" value="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal" style="text-align:right;min-width:70px"':""}></td>`; }
 function renderMaestro(){
   const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
-  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c)).join("") + `<td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
-  h += rows.map(i => `<tr data-c="${esc(i.cod)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
-       `<td class=n>${i.act===null?"*":fmt(i.act)}</td><td class=n>${i.nmov}</td><td style="white-space:nowrap"><button class="btn sm" data-save disabled type="button">Guardar</button> ${i.nmov?"":`<button class="btn sm" data-del type="button">Borrar</button>`}</td></tr>`).join("");
+  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
+  h += rows.map(i => `<tr data-c="${esc(i.cod)}" class="${claseEstado(i.estado)}" title="${esc(i.estado)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
+       `<td class="n st">${i.act===null?"*":fmt(i.act)}</td><td class=n>${i.nmov}</td><td style="white-space:nowrap"><button class="btn sm" data-save disabled type="button">Guardar</button> ${i.nmov?"":`<button class="btn sm" data-del type="button">Borrar</button>`}</td></tr>`).join("");
   $("mt").innerHTML = h;
   $("mt").querySelectorAll("tr[data-c] input").forEach(inp => inp.oninput = () => { const tr = inp.closest("tr"); tr.classList.add("dirty"); tr.querySelector("[data-save]").disabled = false; });
   $("mt").querySelectorAll("[data-save]").forEach(b => b.onclick = async () => {
