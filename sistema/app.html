@@ -72,6 +72,31 @@ iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);backgrou
 .subnav .btn.on{background:var(--ac);color:var(--acf)}
 .banner{background:var(--hd);border:1px solid var(--ln);padding:8px 10px;margin-bottom:12px;font-size:13px}
 .banner:empty{display:none}
+.modo{display:flex;gap:4px;align-items:center;margin-bottom:8px}
+.modo button{background:none;border:1px solid var(--ln);color:var(--fg);padding:5px 14px;font:inherit;cursor:pointer}
+.modo button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chips button{background:none;border:1px solid var(--ln);color:var(--fg);padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.chips button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin:10px 0 6px}
+.gt{border:1px solid var(--ln);background:var(--bg);color:var(--fg);padding:6px;text-align:left;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:4px}
+.gt:hover,.gt:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.gt .gimg{aspect-ratio:1/1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--ln)}
+.gt .gimg img{width:100%;height:100%;object-fit:contain}
+.gt .gimg span{font:bold 28px Arial;color:#9a9a9a}
+.gt .gn{font-weight:bold;font-size:13px;line-height:1.25;min-height:2.5em}
+.gt .gs{font-size:12px;color:var(--mut)}
+.gt.rojo{border-color:var(--rfg);background:var(--rbg)} .gt.rojo .gs{color:var(--rfg);font-weight:bold}
+.gt.amar{border-color:var(--afg);background:var(--abg)} .gt.amar .gs{color:var(--afg);font-weight:bold}
+.velo{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.pk{background:var(--bg);color:var(--fg);border:1px solid var(--ln);width:100%;max-width:440px;padding:16px;max-height:100%;overflow:auto}
+.pkfoto{aspect-ratio:4/3;background:#fff;border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:10px}
+.pkfoto img{width:100%;height:100%;object-fit:contain} .pkfoto span{font:bold 48px Arial;color:#9a9a9a}
+.pknom{font-size:18px;font-weight:bold;margin-bottom:2px}
+.pktipo{margin:8px 0;font-weight:bold}
+.pkcant{display:grid;grid-template-columns:64px 1fr 64px;gap:6px;margin:8px 0 10px}
+.pkcant button{font:bold 26px Arial;padding:6px 0}
+.pkcant input{text-align:center;font:bold 26px Arial;margin:0}
 img.th{width:34px;height:34px;object-fit:cover;vertical-align:middle;cursor:pointer;border:1px solid var(--ln);margin-right:4px}
 .sesbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--ln);border-left:4px solid var(--ac);padding:8px 10px;margin-bottom:14px}
 a{color:var(--fg)}
@@ -127,6 +152,11 @@ tr.flash td{animation:fl 1s ease-out}
  </div>
  <div class="cols">
   <div class="form">
+   <div class="modo" role="group" aria-label="Modo de carga">
+     <span class="mut">Modo:</span>
+     <button data-modo="lista" class="on" type="button">Lista</button>
+     <button data-modo="fotos" type="button">Fotos</button>
+   </div>
    <div class="tipo">
      <button id="tS" class="on" type="button">SALIDA</button>
      <button id="tE" type="button">ENTRADA</button>
@@ -134,6 +164,7 @@ tr.flash td{animation:fl 1s ease-out}
    <label>Escanear código (lectora)<input id="scan" class="scan" autocomplete="off" placeholder="Pasar la lectora, o escribir el código y Enter"></label>
    <div id="smsg" class="msg"></div>
 
+   <div id="manual">
    <h3>Agregar a mano</h3>
    <label>Insumo (código o nombre)<input id="buscar" autocomplete="off" placeholder="ej: guantes, CIN-01"></label>
    <div id="sug" class="sug"></div>
@@ -145,7 +176,33 @@ tr.flash td{animation:fl 1s ease-out}
    <label>Observación (opcional)<input id="obs" autocomplete="off"></label>
    <div id="aviso" class="msg warn"></div>
    <button id="agregar" class="btn" type="button">Agregar a la lista</button>
+   </div>
   </div>
+ </div>
+
+ <div id="galeria" hidden>
+   <div class="bar" style="margin-top:4px">
+     <input id="gbuscar" placeholder="Buscar por nombre o código" autocomplete="off" style="max-width:320px;margin:0">
+     <div id="gsect" class="chips"></div>
+   </div>
+   <div id="ggrid" class="ggrid"></div>
+ </div>
+
+ <div id="pick" class="velo" hidden>
+   <div class="pk" role="dialog" aria-modal="true" aria-labelledby="pknom">
+     <div id="pkfoto" class="pkfoto"></div>
+     <div id="pknom" class="pknom"></div>
+     <div id="pkstock" class="mut"></div>
+     <div id="pktipo" class="pktipo"></div>
+     <div class="pkcant">
+       <button id="pkmenos" class="btn" type="button" aria-label="Menos">−</button>
+       <input id="pkn" inputmode="decimal" value="1" aria-label="Cantidad">
+       <button id="pkmas" class="btn" type="button" aria-label="Más">+</button>
+     </div>
+     <label>Unidad<select id="pkuni"></select></label>
+     <div class="bar"><button id="pkok" class="btn pri" type="button">Agregar a la lista</button>
+     <button id="pkno" class="btn" type="button">Cancelar</button></div>
+   </div>
  </div>
 
  <h3>Lista a cargar (<span id="nl">0</span>)</h3>
@@ -340,7 +397,7 @@ async function cargarDatos(){
   $("banner").textContent = D.pendientes ? `${D.pendientes} movimiento(s) guardados en espera: el Excel está abierto en algún lado. Se pasan solos cuando se cierre.` : "";
   if(sel && IT[sel]) showCard(sel);
   lista = lista.filter(l => IT[l.cod]);
-  renderLista(); focoScan();
+  renderLista(); renderGaleria(); focoScan();
 }
 
 /* ---- sonido de confirmación ---- */
@@ -352,6 +409,62 @@ function beep(ok){
     tonos.forEach(([f, t0, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = f; o.type = "square"; g.gain.value = .06; o.connect(g); g.connect(AC.destination); o.start(AC.currentTime + t0); o.stop(AC.currentTime + t0 + d); });
   }catch(e){}
 }
+
+/* ---- modo de carga: lista (búsqueda / lectora) o fotos (tipo balanza) ---- */
+let MODO = store.get("modo", "lista"), GSECT = "";
+function setModo(m){
+  MODO = m; store.set("modo", m);
+  document.querySelectorAll(".modo button").forEach(b => b.classList.toggle("on", b.dataset.modo === m));
+  $("manual").hidden = m !== "lista";
+  $("galeria").hidden = m !== "fotos";
+  if(m === "fotos") renderGaleria();
+}
+document.querySelectorAll(".modo button").forEach(b => b.onclick = () => setModo(b.dataset.modo));
+const iniciales = t => String(t||"").replace(/\(.*?\)/g, "").trim().split(/\s+/).slice(0,2).map(w => w[0] || "").join("").toUpperCase();
+const imgFoto = (i, cls) => i.foto ? `<img src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" alt="" loading="lazy">` : `<span>${esc(iniciales(i.ins))}</span>`;
+function renderGaleria(){
+  if($("galeria").hidden) return;
+  const sects = [...new Set(D.items.map(i => i.sec).filter(Boolean))].sort();
+  if(GSECT && !sects.includes(GSECT)) GSECT = "";
+  $("gsect").innerHTML = [`<button data-s="" class="${GSECT?"":"on"}" type=button>Todos</button>`].concat(sects.map(x => `<button data-s="${esc(x)}" class="${GSECT===x?"on":""}" type=button>${esc(x)}</button>`)).join("");
+  $("gsect").querySelectorAll("button").forEach(b => b.onclick = () => { GSECT = b.dataset.s; renderGaleria(); });
+  const rows = D.items.filter(i => (!GSECT || i.sec === GSECT) && hasAll(i.cod + " " + i.ins, $("gbuscar").value));
+  $("ggrid").innerHTML = rows.map(i => `<button class="gt ${claseEstado(i.estado)}" data-c="${esc(i.cod)}" type=button>
+      <div class="gimg">${imgFoto(i)}</div><div class="gn">${esc(i.ins)}</div>
+      <div class="gs">${i.act === null ? "Stock s/d" : `Stock: ${fmt(i.act)} ${esc(plural(i.ub, i.act))}`}${i.estado !== "OK" && i.act !== null ? " · " + esc(i.estado) : ""}</div></button>`).join("")
+    || `<p class=mut>Sin resultados.</p>`;
+  $("ggrid").querySelectorAll(".gt").forEach(b => b.onclick = () => abrirPick(b.dataset.c));
+}
+$("gbuscar").oninput = renderGaleria;
+let PK = null;
+function abrirPick(cod){
+  const i = IT[cod]; if(!i) return; PK = cod;
+  $("pkfoto").innerHTML = imgFoto(i);
+  $("pknom").textContent = i.ins;
+  $("pkstock").innerHTML = stockTxt(i);
+  $("pktipo").textContent = tipo === "SALIDA" ? "SALIDA (se saca)" : "ENTRADA (ingresa)";
+  $("pkuni").innerHTML = uniOpts(i);
+  $("pkuni").value = (tipo === "ENTRADA" && i.emp) ? i.emp : i.ub;
+  $("pkn").value = "1";
+  $("pick").hidden = false; $("pkn").focus(); $("pkn").select();
+}
+function cerrarPick(){ $("pick").hidden = true; PK = null; focoScan(); }
+const pkVal = () => parseFloat(($("pkn").value || "").replace(",", "."));
+$("pkmenos").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.max(1, Math.round(((v > 0 ? v : 1) - 1) * 1000) / 1000) || 1); };
+$("pkmas").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.round(((v > 0 ? v : 0) + 1) * 1000) / 1000); };
+$("pkno").onclick = cerrarPick;
+$("pick").onclick = e => { if(e.target === $("pick")) cerrarPick(); };
+$("pkok").onclick = () => {
+  const v = pkVal(); if(!(v > 0)){ $("pkn").focus(); return; }
+  const i = IT[PK], l = sumarALista(PK, v, $("pkuni").value, tipo, "");
+  msg($("smsg"), `${tipo==="SALIDA"?"Salida":"Entrada"}: <b>${esc(i.cod)}</b> · ${esc(i.ins)} → ${fmt(l.cant)} ${esc(plural(l.unidad, l.cant))} en la lista`, "ok");
+  cerrarPick();
+};
+document.addEventListener("keydown", e => {
+  if($("pick").hidden) return;
+  if(e.key === "Escape"){ e.preventDefault(); cerrarPick(); }
+  if(e.key === "Enter" && document.activeElement !== $("pkno")){ e.preventDefault(); $("pkok").click(); }
+});
 
 /* ---- agregar a la lista (suma si ya está la misma combinación) ---- */
 function sumarALista(cod, cant, unidad, t, obs){
@@ -888,7 +1001,7 @@ $("cambiar").onclick = async () => {
   if(r.ok){ $("pa").value=$("pn").value=$("pn2").value=""; D.clave_inicial=false; }
 };
 
-setTipo(tipo); mostrarCarga(); cargarDatos();   // la lista se dibuja cuando llegan los datos
+setTipo(tipo); setModo(MODO); mostrarCarga(); cargarDatos();   // la lista se dibuja cuando llegan los datos
 if(USR) api("/api/sesion", {}).then(r => { if(r.status === 401) salir("vencida"); });
 </script>
 </body>
