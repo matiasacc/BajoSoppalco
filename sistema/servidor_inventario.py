@@ -21,6 +21,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import socket
 import sys
 import threading
@@ -183,6 +184,62 @@ def snapshot():
                                  obs=m["obs"], fila=None))
         st = cm.compute_stock(items, movs)
         return wb, items, movs, st, npend
+
+
+# ---------------------------------------------------------------- copias de seguridad
+BACKUPS = os.path.join(cm.DATOS, "backups")
+MAX_AUTO, MAX_MANUAL = 30, 10
+RE_BACKUP = re.compile(r"^Inventario_\d{4}-\d{2}-\d{2}(_\d{4}_manual)?\.xlsx$")
+
+
+def lista_backups():
+    if not os.path.isdir(BACKUPS):
+        return []
+    out = []
+    for f in os.listdir(BACKUPS):
+        if RE_BACKUP.match(f):
+            p = os.path.join(BACKUPS, f)
+            out.append(dict(nombre=f, fecha=dt.datetime.fromtimestamp(os.path.getmtime(p)).strftime("%d/%m/%Y %H:%M"),
+                            kb=round(os.path.getsize(p) / 1024), manual="_manual" in f, t=os.path.getmtime(p)))
+    return sorted(out, key=lambda x: -x["t"])
+
+
+def hacer_backup(manual=False):
+    """Copia el Excel a datos/backups. Automática: una por día. Manual: con hora."""
+    with LOCK:
+        if not os.path.exists(cm.XLSX):
+            return None
+        os.makedirs(BACKUPS, exist_ok=True)
+        ahora = dt.datetime.now()
+        nombre = f"Inventario_{ahora:%Y-%m-%d}" + (f"_{ahora:%H%M}_manual" if manual else "") + ".xlsx"
+        destino = os.path.join(BACKUPS, nombre)
+        if manual or not os.path.exists(destino):
+            shutil.copy(cm.XLSX, destino)       # copy (no copy2): la fecha de la copia es la de hoy
+    for tipo, maximo in ((False, MAX_AUTO), (True, MAX_MANUAL)):
+        for b in [b for b in lista_backups() if b["manual"] == tipo][maximo:]:
+            try:
+                os.remove(os.path.join(BACKUPS, b["nombre"]))
+            except OSError:
+                pass
+    return nombre
+
+
+def ciclo_backup():
+    while True:
+        try:
+            hacer_backup()
+        except Exception as e:
+            print("Aviso: no se pudo hacer la copia de seguridad:", e)
+        time.sleep(3600)
+
+
+def api_admin_backups_get():
+    return 200, dict(backups=[{k: v for k, v in b.items() if k != "t"} for b in lista_backups()])
+
+
+def api_admin_backup_post():
+    n = hacer_backup(manual=True)
+    return (200, dict(ok=True, msg=f"Copia guardada: {n}")) if n else (400, dict(error="No hay planilla para copiar."))
 
 
 # ---------------------------------------------------------------- API
@@ -716,6 +773,17 @@ class H(BaseHTTPRequestHandler):
                 return self._guard(api_admin_movs_get)
             if path == "/api/admin/personas":
                 return self._guard(api_admin_personas_get)
+            if path == "/api/admin/backups":
+                return self._guard(api_admin_backups_get)
+            if path == "/api/admin/backup_descargar":
+                nombre = parse_qs(urlparse(self.path).query).get("nombre", [""])[0]
+                p = os.path.join(BACKUPS, nombre)
+                if not RE_BACKUP.match(nombre) or not os.path.isfile(p):
+                    return self._send(404, dict(error="No encontrado"))
+                with open(p, "rb") as fh:
+                    data = fh.read()
+                return self._send(200, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                  {"Content-Disposition": f'attachment; filename="{nombre}"'})
             if path == "/excel":
                 with LOCK:
                     with open(cm.XLSX, "rb") as fh:
@@ -763,6 +831,8 @@ class H(BaseHTTPRequestHandler):
                 return self._guard(api_password, body)
             if path == "/api/admin/ping":
                 return self._send(200, dict(ok=True))
+            if path == "/api/admin/backup":
+                return self._guard(api_admin_backup_post)
             if path == "/api/admin/salir":
                 TOKENS.pop(self._token(), None)
                 return self._send(200, dict(ok=True))
@@ -788,6 +858,7 @@ def ip_local():
 
 def main():
     cm.asegurar_excel()
+    threading.Thread(target=ciclo_backup, daemon=True).start()
     cfg = load_config()
     try:
         srv = Servidor((HOST, PORT), H)

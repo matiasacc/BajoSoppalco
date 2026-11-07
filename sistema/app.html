@@ -230,6 +230,10 @@ tr.flash td{animation:fl 1s ease-out}
    <div id="s-cuenta" hidden class="form">
      <h3>Descargar Excel</h3>
      <a id="dl" class="btn" href="#">Descargar Inventario_Bajo_Soppalco.xlsx</a>
+     <h3>Copias de seguridad</h3>
+     <p class="mut" style="margin-top:0">Se hace una copia automática por día en <code>datos\backups</code> (se guardan las últimas 30, más 10 manuales).</p>
+     <button id="bkahora" class="btn" type="button">Hacer copia ahora</button>
+     <div class="tw" style="margin-top:8px"><table><thead><tr><th>Copia</th><th>Fecha</th><th>Tamaño</th><th></th></tr></thead><tbody id="bkt"></tbody></table></div>
      <h3>Cambiar contraseña</h3>
      <label>Actual<input id="pa" type="password" autocomplete="current-password"></label>
      <label>Nueva (mín. 6 caracteres)<input id="pn" type="password" autocomplete="new-password"></label>
@@ -598,6 +602,7 @@ document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = (
   if(b.dataset.sub==="maestro") loadMaestro();
   if(b.dataset.sub==="movs") loadMovs();
   if(b.dataset.sub==="pers") loadPers();
+  if(b.dataset.sub==="cuenta") loadBackups();
 });
 
 const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","o"],["bar",""]];
@@ -732,6 +737,17 @@ $("pcok").onclick = async () => {
   $("pc1").value = ""; $("pc2").value = "";
   const r = await persona(datos);
   if(r.ok) cerrarClave(); else $("pc1").focus();
+};
+
+async function loadBackups(){
+  const r = await api("/api/admin/backups"); if(!r.ok) return;
+  $("bkt").innerHTML = r.d.backups.map(b => `<tr><td>${esc(b.nombre)}${b.manual?" <span class=mut>(manual)</span>":""}</td><td>${b.fecha}</td><td class=n>${b.kb} KB</td>
+    <td><a href="/api/admin/backup_descargar?nombre=${encodeURIComponent(b.nombre)}&token=${encodeURIComponent(sess.get())}">Descargar</a></td></tr>`).join("") || `<tr><td colspan=4 class=mut>Todavía no hay copias.</td></tr>`;
+}
+$("bkahora").onclick = async () => {
+  const r = await api("/api/admin/backup", {});
+  msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+  loadBackups();
 };
 
 $("cambiar").onclick = async () => {
