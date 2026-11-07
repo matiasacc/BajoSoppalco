@@ -2,7 +2,7 @@
 
 Programa de control de inventario para el depósito Bajo Soppalco.
 
-- Carga de entradas y salidas desde el navegador, a mano o con lectora de códigos de barras.
+- Carga de entradas y salidas desde el navegador: tocando la foto del insumo, buscándolo o con lectora de códigos de barras.
 - Ingreso por **legajo y contraseña**; cada movimiento queda registrado a nombre de quien ingresó, con fecha y hora automáticas.
 - Stock en unidades y en empaques (cajas cerradas + sueltas), alertas de stock mínimo e informe de consumo.
 - Administración con contraseña: maestro de insumos, personas, corrección y anulación de movimientos.

@@ -75,13 +75,26 @@ iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);backgrou
 .filtros{align-items:flex-end}
 .filtros label{margin:0;font-size:12px}
 .filtros input,.filtros select{display:inline-block;width:auto;margin:2px 0 0;padding:6px}
-.modo{display:flex;gap:4px;align-items:center;margin-bottom:8px}
-.modo button{background:none;border:1px solid var(--ln);color:var(--fg);padding:5px 14px;font:inherit;cursor:pointer}
-.modo button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.ctop{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:16px;align-items:end}
+.ctop .tipo{margin:0}
+.scanl{margin:0}
+.cwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);gap:20px;align-items:start;margin-top:4px}
+.gbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.gbar input{max-width:320px;margin:0}
+#ggrid{max-height:calc(100vh - 290px);min-height:240px;overflow:auto;padding-right:2px}
+.clista{position:sticky;top:10px}
+.clista h3{margin-top:0}
+.clista .lt td{padding:4px 5px;vertical-align:middle}
+.clista .lt .lins{font-size:13px;line-height:1.25}
+.clista .lt .lins small{display:block;color:var(--mut);font-size:11px}
+.clista .lt input.qty{width:52px}
+.clista .lt select,.clista .lt input{font-size:13px;padding:5px 4px}
+.clista .lt td:nth-child(5) input{min-width:70px}
+@media (max-width:1000px){.ctop,.cwrap{grid-template-columns:minmax(0,1fr)}#ggrid{max-height:none}.clista{position:static}}
 .chips{display:flex;gap:4px;flex-wrap:wrap}
 .chips button{background:none;border:1px solid var(--ln);color:var(--fg);padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
 .chips button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
-.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin:10px 0 6px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:10px 0 6px;align-content:start}
 .gt{border:1px solid var(--ln);background:var(--bg);color:var(--fg);padding:6px;text-align:left;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:4px}
 .gt:hover,.gt:focus{outline:2px solid var(--ac);outline-offset:-1px}
 .gt .gimg{aspect-ratio:1/1;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--ln)}
@@ -153,44 +166,25 @@ tr.flash td{animation:fl 1s ease-out}
    <span class="bar" style="margin:0"><button id="smiclave" class="btn sm" type="button">Cambiar mi contraseña</button>
    <button id="ssalir" class="btn sm pri" type="button">Salir</button></span>
  </div>
- <div class="cols">
-  <div class="form">
-   <div class="modo" role="group" aria-label="Modo de carga">
-     <span class="mut">Modo:</span>
-     <button data-modo="lista" class="on" type="button">Lista</button>
-     <button data-modo="fotos" type="button">Fotos</button>
-   </div>
+ <div class="ctop">
    <div class="tipo">
      <button id="tS" class="on" type="button">SALIDA</button>
      <button id="tE" type="button">ENTRADA</button>
    </div>
-   <label>Escanear código (lectora)<input id="scan" class="scan" autocomplete="off" placeholder="Pasar la lectora, o escribir el código y Enter"></label>
-   <div id="smsg" class="msg"></div>
-
-   <div id="manual">
-   <h3>Agregar a mano</h3>
-   <label>Insumo (código o nombre)<input id="buscar" autocomplete="off" placeholder="ej: guantes, CIN-01"></label>
-   <div id="sug" class="sug"></div>
-   <div id="card" class="card"></div>
-   <div class="grid">
-     <label>Cantidad<input id="cant" inputmode="decimal" autocomplete="off"></label>
-     <label>Unidad<select id="uni"></select></label>
-   </div>
-   <label>Observación (opcional)<input id="obs" autocomplete="off"></label>
-   <div id="aviso" class="msg warn"></div>
-   <button id="agregar" class="btn" type="button">Agregar a la lista</button>
-   </div>
-  </div>
+   <label class="scanl">Escanear código (lectora)<input id="scan" class="scan" autocomplete="off" placeholder="Pasar la lectora, o escribir el código y Enter"></label>
  </div>
+ <div id="smsg" class="msg"></div>
 
- <div id="galeria" hidden>
-   <div class="bar" style="margin-top:4px">
-     <input id="gbuscar" placeholder="Buscar por nombre o código" autocomplete="off" style="max-width:320px;margin:0">
+ <div class="cwrap">
+ <section id="galeria">
+   <div class="gbar">
+     <input id="gbuscar" placeholder="Buscar insumo por nombre o código" autocomplete="off">
      <div id="gsect" class="chips"></div>
    </div>
    <div id="ggrid" class="ggrid"></div>
- </div>
+ </section>
 
+ <section class="clista">
  <div id="pick" class="velo" hidden>
    <div class="pk" role="dialog" aria-modal="true" aria-labelledby="pknom">
      <div id="pkfoto" class="pkfoto"></div>
@@ -203,6 +197,8 @@ tr.flash td{animation:fl 1s ease-out}
        <button id="pkmas" class="btn" type="button" aria-label="Más">+</button>
      </div>
      <label>Unidad<select id="pkuni"></select></label>
+     <label>Observación (opcional)<input id="pkobs" autocomplete="off"></label>
+     <div id="pkaviso" class="msg warn"></div>
      <div class="bar"><button id="pkok" class="btn pri" type="button">Agregar a la lista</button>
      <button id="pkno" class="btn" type="button">Cancelar</button></div>
    </div>
@@ -210,14 +206,16 @@ tr.flash td{animation:fl 1s ease-out}
 
  <h3>Lista a cargar (<span id="nl">0</span>)</h3>
  <div class="tw"><table class="lt">
-  <thead><tr><th>E/S</th><th>Código</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Obs.</th><th></th></tr></thead>
-  <tbody id="lista"><tr><td colspan="7" class="mut">Vacía</td></tr></tbody>
+  <thead><tr><th>E/S</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Obs.</th><th></th></tr></thead>
+  <tbody id="lista"><tr><td colspan="6" class="mut">Vacía</td></tr></tbody>
  </table></div>
  <p id="lnota" class="mut" style="font-size:12px;margin:6px 0 0"></p>
 
  <div id="msg" class="msg"></div>
  <div class="bar" style="margin-top:10px"><button id="cargar" class="btn pri" type="button" disabled>Cargar al inventario</button>
  <button id="vaciar" class="btn" type="button">Vaciar lista</button></div>
+ </section>
+ </div>
  </div>
 
  <h3>Últimos movimientos</h3>
@@ -405,9 +403,8 @@ $("fsector").onchange = () => $("recInv").click();
 let D = {items:[], personas:[], ultimos:[]}, IT = {}, BAR = {}, tipo = store.get("tipo","SALIDA"), sel = null, lista = store.get("lista", []), sugIdx = 0;
 const normBar = s => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-function setTipo(t){ tipo=t; store.set("tipo",t); $("tS").classList.toggle("on",t==="SALIDA"); $("tE").classList.toggle("on",t==="ENTRADA"); if(sel) uniDefault(IT[sel]); checkAviso(); focoScan(); }
+function setTipo(t){ tipo=t; store.set("tipo",t); $("tS").classList.toggle("on",t==="SALIDA"); $("tE").classList.toggle("on",t==="ENTRADA"); focoScan(); }
 /* Entrada a mano: por defecto en empaque (caja). Salida y lectora: unidad suelta. */
-function uniDefault(i){ $("uni").value = (tipo==="ENTRADA" && i.emp) ? i.emp : i.ub; }
 const plural = (w,n) => { w=(w||"").toLowerCase(); return (!w || n===1) ? w : w + (/[aeiou]$/.test(w) ? "s" : "es"); };
 function enEmp(i){ if(!i.emp || !i.fac || i.act===null || i.act<0) return ""; const c=Math.floor(i.act/i.fac), s=Math.round((i.act-c*i.fac)*10)/10; return `${c} ${plural(i.emp,c)}` + (s ? ` + ${fmt(s)} ${plural(i.ub,s)}` : ""); }
 $("tS").onclick = () => setTipo("SALIDA");
@@ -422,7 +419,6 @@ async function cargarDatos(){
   D.items.forEach(i => { if(i.bar) BAR[normBar(i.bar)] = i.cod; });     // el código de barras propio tiene prioridad
   $("ult").innerHTML = D.ultimos.length ? D.ultimos.map(m => `<tr><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td></tr>`).join("") : `<tr><td colspan=7 class=mut>Sin movimientos</td></tr>`;
   $("banner").textContent = D.pendientes ? `${D.pendientes} movimiento(s) guardados en espera: el Excel está abierto en algún lado. Se pasan solos cuando se cierre.` : "";
-  if(sel && IT[sel]) showCard(sel);
   lista = lista.filter(l => IT[l.cod]);
   renderLista(); renderGaleria(); focoScan();
 }
@@ -437,20 +433,11 @@ function beep(ok){
   }catch(e){}
 }
 
-/* ---- modo de carga: lista (búsqueda / lectora) o fotos (tipo balanza) ---- */
-let MODO = store.get("modo", "lista"), GSECT = "";
-function setModo(m){
-  MODO = m; store.set("modo", m);
-  document.querySelectorAll(".modo button").forEach(b => b.classList.toggle("on", b.dataset.modo === m));
-  $("manual").hidden = m !== "lista";
-  $("galeria").hidden = m !== "fotos";
-  if(m === "fotos") renderGaleria();
-}
-document.querySelectorAll(".modo button").forEach(b => b.onclick = () => setModo(b.dataset.modo));
+/* ---- galería de insumos (fotos) ---- */
+let GSECT = "";
 const iniciales = t => String(t||"").replace(/\(.*?\)/g, "").trim().split(/\s+/).slice(0,2).map(w => w[0] || "").join("").toUpperCase();
 const imgFoto = (i, cls) => i.foto ? `<img src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" alt="" loading="lazy">` : `<span>${esc(iniciales(i.ins))}</span>`;
 function renderGaleria(){
-  if($("galeria").hidden) return;
   const sects = [...new Set(D.items.map(i => i.sec).filter(Boolean))].sort();
   if(GSECT && !sects.includes(GSECT)) GSECT = "";
   $("gsect").innerHTML = [`<button data-s="" class="${GSECT?"":"on"}" type=button>Todos</button>`].concat(sects.map(x => `<button data-s="${esc(x)}" class="${GSECT===x?"on":""}" type=button>${esc(x)}</button>`)).join("");
@@ -463,6 +450,10 @@ function renderGaleria(){
   $("ggrid").querySelectorAll(".gt").forEach(b => b.onclick = () => abrirPick(b.dataset.c));
 }
 $("gbuscar").oninput = renderGaleria;
+$("gbuscar").onkeydown = e => {
+  if(e.key === "Enter"){ e.preventDefault(); const t = $("ggrid").querySelector(".gt"); if(t) abrirPick(t.dataset.c); }
+  if(e.key === "Escape"){ $("gbuscar").value = ""; renderGaleria(); }
+};
 let PK = null;
 function abrirPick(cod){
   const i = IT[cod]; if(!i) return; PK = cod;
@@ -472,18 +463,27 @@ function abrirPick(cod){
   $("pktipo").textContent = tipo === "SALIDA" ? "SALIDA (se saca)" : "ENTRADA (ingresa)";
   $("pkuni").innerHTML = uniOpts(i);
   $("pkuni").value = (tipo === "ENTRADA" && i.emp) ? i.emp : i.ub;
-  $("pkn").value = "1";
+  $("pkn").value = "1"; $("pkobs").value = "";
+  pkAviso();
   $("pick").hidden = false; $("pkn").focus(); $("pkn").select();
 }
-function cerrarPick(){ $("pick").hidden = true; PK = null; focoScan(); }
+function cerrarPick(){ $("pick").hidden = true; PK = null; if($("gbuscar").value){ $("gbuscar").value = ""; renderGaleria(); } focoScan(); }
 const pkVal = () => parseFloat(($("pkn").value || "").replace(",", "."));
-$("pkmenos").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.max(1, Math.round(((v > 0 ? v : 1) - 1) * 1000) / 1000) || 1); };
-$("pkmas").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.round(((v > 0 ? v : 0) + 1) * 1000) / 1000); };
+$("pkmenos").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.max(1, Math.round(((v > 0 ? v : 1) - 1) * 1000) / 1000) || 1); pkAviso(); };
+$("pkmas").onclick = () => { const v = pkVal(); $("pkn").value = String(Math.round(((v > 0 ? v : 0) + 1) * 1000) / 1000); pkAviso(); };
+function pkAviso(){
+  const a = $("pkaviso"); a.innerHTML = "";
+  const i = IT[PK], v = pkVal(); if(!i || tipo !== "SALIDA" || i.act === null || !(v > 0)) return;
+  const b = cantBase(PK, v, $("pkuni").value); if(b === null) return;
+  const enLista = lista.filter(l => l.cod === PK).reduce((s,l) => s + (cantBase(l.cod,l.cant,l.unidad) ?? 0) * (l.tipo==="SALIDA"?1:-1), 0);
+  if(b + enLista > i.act) a.innerHTML = `Atención: supera el stock registrado (${fmt(i.act)} ${esc(plural(i.ub, i.act))}). Se puede cargar igual.`;
+}
+$("pkn").oninput = pkAviso; $("pkuni").onchange = pkAviso;
 $("pkno").onclick = cerrarPick;
 $("pick").onclick = e => { if(e.target === $("pick")) cerrarPick(); };
 $("pkok").onclick = () => {
   const v = pkVal(); if(!(v > 0)){ $("pkn").focus(); return; }
-  const i = IT[PK], l = sumarALista(PK, v, $("pkuni").value, tipo, "");
+  const i = IT[PK], l = sumarALista(PK, v, $("pkuni").value, tipo, $("pkobs").value.trim());
   msg($("smsg"), `${tipo==="SALIDA"?"Salida":"Entrada"}: <b>${esc(i.cod)}</b> · ${esc(i.ins)} → ${fmt(l.cant)} ${esc(plural(l.unidad, l.cant))} en la lista`, "ok");
   cerrarPick();
 };
@@ -537,7 +537,7 @@ document.addEventListener("keydown", e => {
   }
 }, true);
 
-/* ---- búsqueda manual ---- */
+/* ---- textos de stock ---- */
 function stockTxt(i){
   if(i.act===null) return `<b>Stock: s/d</b> <span class=mut>(${esc(i.estado)})</span>`;
   let t = `<b>Stock: ${fmt(i.act)} ${esc(i.ub)}</b>`;
@@ -546,32 +546,7 @@ function stockTxt(i){
   if(i.min !== null && i.min !== undefined) t += ` <span class=mut>(mínimo ${fmt(i.min)})</span>`;
   return t;
 }
-function buscar(){
-  const q = $("buscar").value.trim();
-  sel = null; $("card").innerHTML=""; $("uni").innerHTML="";
-  if(!q){ $("sug").innerHTML=""; return; }
-  const res = D.items.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec, q)).slice(0,10);
-  sugIdx = 0;
-  $("sug").innerHTML = res.length ? res.map((i,k) => `<div data-c="${esc(i.cod)}" class="${k===0?"act":""}"><span><b>${esc(i.cod)}</b> · ${esc(i.ins)}</span><small>${i.act===null?"s/d":fmt(i.act)+" "+esc(i.ub)}</small></div>`).join("") : `<div class=mut>Sin resultados. Si es un insumo nuevo, pedir el alta a un administrador.</div>`;
-  $("sug").querySelectorAll("div[data-c]").forEach(d => d.onmousedown = e => { e.preventDefault(); elegir(d.dataset.c); });
-}
-function elegir(cod){
-  const i = IT[cod]; if(!i) return;
-  sel = cod; $("buscar").value = `${i.cod} · ${i.ins}`; $("sug").innerHTML = "";
-  $("uni").innerHTML = uniOpts(i);
-  uniDefault(i);
-  showCard(cod); $("cant").focus(); checkAviso();
-}
 const claseEstado = e => (e === "Sin stock" || e === "Negativo") ? "rojo" : e === "Bajo mínimo" ? "amar" : "";
-function showCard(cod){ const i = IT[cod]; $("card").className = "card " + claseEstado(i.estado); $("card").innerHTML = `${stockTxt(i)}<br><span class=mut>${esc(i.sec||"–")} · Ubic. ${esc(i.ubi||"–")}</span>`; }
-$("buscar").oninput = buscar;
-$("buscar").onkeydown = e => {
-  const ds = [...$("sug").querySelectorAll("div[data-c]")];
-  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ if(!ds.length) return; e.preventDefault(); sugIdx = (sugIdx + (e.key==="ArrowDown"?1:-1) + ds.length) % ds.length; ds.forEach((d,k)=>d.classList.toggle("act",k===sugIdx)); }
-  if(e.key==="Enter"){ e.preventDefault(); if(ds[sugIdx]) elegir(ds[sugIdx].dataset.c); }
-};
-$("buscar").onblur = () => setTimeout(()=>{ if(document.activeElement !== $("buscar")) $("sug").innerHTML=""; }, 150);
-
 function uniOpts(i){
   let o = `<option value="${esc(i.ub)}">${esc(i.ub)} (suelta)</option>`;
   [[i.emp,i.fac],[i.emp2,i.fac2]].forEach(([e,f]) => { if(e) o += `<option value="${esc(e)}">${esc(e)}${f?` (x ${fmt(f)} ${esc(plural(i.ub,f))})`:" (* sin cantidad definida)"}</option>`; });
@@ -588,31 +563,6 @@ function excede(cod){   // salida total en la lista > stock registrado
   const tot = lista.filter(l => l.cod===cod).reduce((s,l) => s + (cantBase(l.cod,l.cant,l.unidad) ?? 0) * (l.tipo==="SALIDA"?1:-1), 0);
   return tot > i.act;
 }
-function checkAviso(){
-  const a = $("aviso"); a.innerHTML=""; a.className="msg warn";
-  if(!sel || tipo!=="SALIDA") return;
-  const i = IT[sel], c = parseFloat(($("cant").value||"").replace(",","."));
-  if(!(c>0) || i.act===null) return;
-  const b = cantBase(sel, c, $("uni").value); if(b===null) return;
-  const enLista = lista.filter(l => l.cod===sel).reduce((s,l)=> s + (cantBase(l.cod,l.cant,l.unidad) ?? 0) * (l.tipo==="SALIDA"?1:-1), 0);
-  if(b + enLista > i.act) a.innerHTML = `Atención: la salida supera el stock registrado (${fmt(i.act)} ${esc(i.ub)}). Se puede cargar igual.`;
-}
-$("cant").oninput = checkAviso; $("uni").onchange = checkAviso;
-["cant","obs"].forEach(id => $(id).onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); agregar(); } });
-
-function agregar(){
-  const errs = [];
-  if(!sel) errs.push("Elegir un insumo de la lista.");
-  const c = parseFloat(($("cant").value||"").replace(",","."));
-  if(!(c>0)) errs.push("Cantidad inválida.");
-  if(errs.length){ msg($("smsg"), errs.join(" "), "err"); return; }
-  sumarALista(sel, c, $("uni").value, tipo, $("obs").value.trim());
-  msg($("smsg"), "");
-  $("buscar").value=""; $("cant").value=""; $("obs").value=""; $("card").innerHTML=""; $("uni").innerHTML=""; $("aviso").innerHTML=""; sel=null;
-  $("scan").focus();
-}
-$("agregar").onclick = agregar;
-
 /* ---- lista editable ---- */
 function renderLista(flash){
   $("nl").textContent = lista.length;
@@ -623,14 +573,14 @@ function renderLista(flash){
     const exc = l.tipo==="SALIDA" && excede(l.cod); if(exc) hayExc = true;
     return `<tr data-k="${k}" class="${k===flash?"flash":""}">
      <td><select data-f="tipo"><option value="SALIDA" ${l.tipo==="SALIDA"?"selected":""}>S</option><option value="ENTRADA" ${l.tipo==="ENTRADA"?"selected":""}>E</option></select></td>
-     <td>${esc(l.cod)}</td><td>${esc(l.ins)}</td>
+     <td class="lins">${esc(l.ins)}<small>${esc(l.cod)}</small></td>
      <td style="white-space:nowrap"><button class="btn sm" data-d="-1" type=button>−</button>
        <input data-f="cant" value="${l.cant}" inputmode="decimal" class="qty">
        <button class="btn sm" data-d="1" type=button>+</button>${exc?' <b title="Supera el stock registrado">*</b>':""}</td>
      <td><select data-f="unidad">${uniOpts(i)}</select></td>
      <td><input data-f="obs" value="${esc(l.obs)}" placeholder="—"></td>
      <td class=c><button class="btn sm" data-x type="button" title="Quitar">✕</button></td></tr>`;
-  }).join("") : `<tr><td colspan=7 class=mut>Vacía. Escanear o agregar a mano.</td></tr>`;
+  }).join("") : `<tr><td colspan=6 class=mut>Vacía. Escanear o tocar un insumo.</td></tr>`;
   $("lnota").textContent = hayExc ? "* La salida supera el stock registrado. Se puede cargar igual." : "";
   $("lista").querySelectorAll("tr[data-k]").forEach(tr => {
     const k = +tr.dataset.k, l = lista[k];
@@ -1028,7 +978,7 @@ $("cambiar").onclick = async () => {
   if(r.ok){ $("pa").value=$("pn").value=$("pn2").value=""; D.clave_inicial=false; }
 };
 
-setTipo(tipo); setModo(MODO); mostrarCarga(); cargarDatos();   // la lista se dibuja cuando llegan los datos
+setTipo(tipo); mostrarCarga(); cargarDatos();   // la lista se dibuja cuando llegan los datos
 if(USR) api("/api/sesion", {}).then(r => { if(r.status === 401) salir("vencida"); });
 </script>
 </body>
