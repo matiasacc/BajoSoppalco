@@ -18,7 +18,7 @@ nav{display:flex;gap:4px;flex-wrap:wrap}
 nav button{background:none;border:1px solid var(--ln);color:var(--fg);padding:7px 12px;font:inherit;cursor:pointer}
 nav button.tema{margin-left:8px;color:var(--mut)}
 nav button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
-main{max-width:1180px;margin:0 auto;padding:16px}
+main{max-width:none;margin:0 auto;padding:16px 20px}
 section[hidden]{display:none}
 h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;border-bottom:1px solid var(--ln);padding-bottom:4px}
 label{display:block;font-size:12px;color:var(--mut);margin-bottom:10px}
@@ -56,10 +56,17 @@ td.n{text-align:right;font-variant-numeric:tabular-nums} td.c{text-align:center}
 .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);background:var(--bg)}
 .mt td{padding:2px}
-.mt input{margin:0;padding:4px;min-width:60px;font-size:13px;border-color:transparent;background:transparent}
+.mt th{font-size:11px;padding:4px 5px;line-height:1.25}
+.mt input{margin:0;padding:4px;min-width:0;width:100%;font-size:13px;border-color:transparent;background:transparent}
+.mt input.n{text-align:right;min-width:46px}
+/* columnas fijas a la izquierda (código e insumo / legajo y nombre) */
+.mt th:first-child,.mt td:first-child{position:sticky;left:0;z-index:1;background:var(--bg);min-width:80px;width:80px}
+.mt th:nth-child(2),.mt td:nth-child(2){position:sticky;left:80px;z-index:1;background:var(--bg);box-shadow:2px 0 0 var(--ln)}
+.mt th:first-child,.mt th:nth-child(2){background:var(--hd);z-index:2}
 .mt input:hover{border-color:var(--ln)}
 .mt tr.dirty td{background:var(--sel)}
-.mt input.w{min-width:200px}
+.mt input.w{min-width:215px}
+.mt input.o{min-width:120px}
 .subnav{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
 .subnav .btn.on{background:var(--ac);color:var(--acf)}
 .banner{background:var(--hd);border:1px solid var(--ln);padding:8px 10px;margin-bottom:12px;font-size:13px}
@@ -593,14 +600,14 @@ document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = (
   if(b.dataset.sub==="pers") loadPers();
 });
 
-const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","w"],["bar",""]];
+const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","o"],["bar",""]];
 async function loadMaestro(){
   const r = await api("/api/admin/maestro"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
   M = r.d.items; renderMaestro();
 }
 const PH = {ins:"Insumo", sec:"Sector", ubi:"Ubic.", ub:"Unidad base", emp:"Empaque 1", fac:"Cant.", emp2:"Empaque 2", fac2:"Cant.",
             sie:"Cajas", sis:"Sueltas", min:"Mínimo (u. base)", obs:"Observaciones", bar:"Cód. barras"};
-function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls==="w"?"w":""}" value="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal" style="text-align:right;min-width:70px"':""}></td>`; }
+function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls}" value="${esc(v??"")}" title="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal"':""}></td>`; }
 function renderMaestro(){
   const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
   let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
