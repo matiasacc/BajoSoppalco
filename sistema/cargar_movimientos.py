@@ -9,7 +9,7 @@ Lee herramientas/movimientos.csv y escribe en datos/Inventario_Bajo_Soppalco.xls
 CSV (separador ; o ,). Columnas:  fecha;tipo;codigo;cantidad;unidad;persona;obs
   fecha    dd/mm/aaaa, dd/mm/aa o dd/mm (año actual). Vacía = hoy.
   tipo     E = entrada / S = salida  (también acepta ENTRADA / SALIDA)
-  codigo   el código de la hoja Maestro (ej. CIN-07)
+  codigo   el código de la hoja Maestro (ej. CIN-01)
   cantidad número (acepta coma decimal)
   unidad   vacía = unidad base. Si se pone el empaque (ej. Caja) se convierte
            con "Cant. por empaque" del Maestro.
@@ -271,8 +271,21 @@ def write_persona(ws, r, legajo, nombre, activo=True, obs=None, clave=None, camb
     ws.auto_filter.ref = f"A1:F{r}"
 
 
-def crear_excel_vacio(path):
-    """Crea la planilla con la estructura completa y sin datos (primera instalación)."""
+# Datos de ejemplo de la planilla nueva (ficticios, para probar; se borran desde Administración)
+EJEMPLO_INSUMOS = [
+    # código, insumo, sector, ubicación, unidad base, empaque, cant. por empaque, stock ini (empaques), sueltas
+    ("CIN-01", "Cinta adhesiva (ejemplo)", "General", "A1", "Rollo", "Caja", 12, 3, 0),
+    ("GUA-01", "Guantes de trabajo (ejemplo)", "General", "A2", "Par", "Caja", 10, 2, 4),
+    ("MAR-01", "Marcador permanente (ejemplo)", "Oficina", "B1", "Unidad", "Caja", 12, 1, 5),
+    ("TRA-01", "Trapo de limpieza (ejemplo)", "General", "B2", "Unidad", None, None, None, 20),
+]
+EJEMPLO_PERSONAS = [("1001", "Usuario Prueba 1"), ("1002", "Usuario Prueba 2")]   # contraseña: 1234
+EJEMPLO_CLAVE = "1234"
+
+
+def crear_excel_vacio(path, ejemplo=True):
+    """Crea la planilla con la estructura completa (primera instalación).
+    Con ejemplo=True agrega unos pocos insumos y usuarios ficticios para probar."""
     wb = openpyxl.Workbook()
     ins = wb.active
     ins.title = "Instrucciones"
@@ -282,7 +295,19 @@ def crear_excel_vacio(path):
     style_header(mae, MAESTRO_HEAD, MAESTRO_W)
     mae.row_dimensions[1].height = 45
     style_header(mov, MOV_HEAD, [11, 9, 9, 30, 9, 9, 10, 13, 26, 52])
-    personas_sheet(wb)
+    per = personas_sheet(wb)
+    if ejemplo:
+        for r, (cod, nom, sec, ubi, ub, emp, fac, sie, sis) in enumerate(EJEMPLO_INSUMOS, start=2):
+            vals = {M_COD: cod, M_INS: nom, M_SEC: sec, M_UBI: ubi, M_UB: ub, M_EMP: emp, M_FAC: fac,
+                    M_SIE: sie, M_SIS: sis, M_SIT: maestro_total_formula(r), M_OBS: "Ejemplo: borrar al empezar",
+                    M_ORI: "Ejemplo"}
+            for c, v in vals.items():
+                mae.cell(row=r, column=c).value = v
+            style_maestro_row(mae, r)
+        mae.auto_filter.ref = f"A1:P{len(EJEMPLO_INSUMOS) + 1}"
+        for r, (leg, nom) in enumerate(EJEMPLO_PERSONAS, start=2):
+            write_persona(per, r, leg, nom, True, f"Ejemplo: contraseña {EJEMPLO_CLAVE}. Borrar al empezar",
+                          hash_clave(EJEMPLO_CLAVE))
     rebuild_stock(wb)
     ins.column_dimensions["A"].width = 22
     ins.column_dimensions["B"].width = 95
@@ -505,8 +530,8 @@ def reset_csv():
     with open(CSV_IN, "w", encoding="utf-8-sig", newline="") as fh:
         fh.write(";".join(CSV_HEADER) + "\n")
         fh.write("# ejemplo (las filas con # no se cargan):\n")
-        fh.write("# 19/10/2026;S;CIN-07;8;;Juan Perez;\n")
-        fh.write("# 20/10/2026;E;CIN-08;10;Caja;Ana Gomez;compra\n")
+        fh.write("# 19/10/2026;S;CIN-01;2;;Usuario Prueba 1;\n")
+        fh.write("# 20/10/2026;E;GUA-01;1;Caja;Usuario Prueba 2;compra\n")
 
 
 # ---------------------------------------------------------------- HTML

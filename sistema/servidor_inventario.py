@@ -426,7 +426,7 @@ def api_admin_maestro_post(body):
         elif accion == "nuevo":
             cod = cm.norm(body.get("cod")).upper()
             if not re.fullmatch(r"[A-Z0-9][A-Z0-9\-]{1,11}", cod):
-                return 400, dict(error="Código inválido (letras, números y guion; ej. CIN-09).")
+                return 400, dict(error="Código inválido (letras, números y guion; ej. CIN-02).")
             if cod in items:
                 return 400, dict(error=f"El código {cod} ya existe.")
             campos, err = _limpiar_campos(body.get("campos") or {})
@@ -558,13 +558,10 @@ def api_admin_personas_post(body):
                     cerrar_sesiones(norm_leg(p["legajo"]))
                 msg = f"{p['nombre']} {'activado' if accion == 'activar' else 'desactivado'}."
             elif accion == "borrar":
-                mov = wb[cm.SH_MOV]
-                if any(cm.norm(mov.cell(row=r, column=8).value).lower() == p["nombre"].lower()
-                       for r in range(2, cm.last_row(mov) + 1)):
-                    return 400, dict(error=f"{p['nombre']} tiene movimientos: desactivarlo en lugar de borrarlo.")
+                # se quita el acceso; los movimientos conservan el nombre en el historial
                 ws.delete_rows(fila)
                 cerrar_sesiones(norm_leg(p["legajo"]))
-                msg = f"{p['nombre']} borrado."
+                msg = f"{p['nombre']} borrado. Sus movimientos se conservan en el historial."
             else:
                 return 400, dict(error="Acción desconocida")
         try:

@@ -16,6 +16,10 @@ Una PC funciona como servidor web interno (HTTP, puerto 8080) y las demás PCs d
 2. Copiar esta carpeta a `C:\Inventario Bajo Soppalco`.
 3. Doble clic en `Instalar.bat`.
 
+La primera vez el programa crea la planilla con **datos de ejemplo** para probar: 4 insumos y 2 usuarios
+(legajos `1001` y `1002`, contraseña `1234`). Se borran desde Administración antes de empezar a usarlo.
+Contraseña inicial de Administración: `soppalco` (cambiarla).
+
 Instrucciones completas: [`LEEME - Instrucciones.pdf`](LEEME%20-%20Instrucciones.pdf).
 
 ## Estructura

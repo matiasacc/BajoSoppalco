@@ -123,7 +123,7 @@ tr.flash td{animation:fl 1s ease-out}
    <div id="smsg" class="msg"></div>
 
    <h3>Agregar a mano</h3>
-   <label>Insumo (código o nombre)<input id="buscar" autocomplete="off" placeholder="ej: transparente, CIN-07"></label>
+   <label>Insumo (código o nombre)<input id="buscar" autocomplete="off" placeholder="ej: guantes, CIN-01"></label>
    <div id="sug" class="sug"></div>
    <div id="card" class="card"></div>
    <div class="grid">
@@ -201,7 +201,7 @@ tr.flash td{animation:fl 1s ease-out}
    </div>
 
    <div id="s-pers" hidden>
-     <p class="mut">Cada persona entra a Cargar con su legajo y contraseña. La contraseña la escribe la propia persona con <b>Definir contraseña</b>: queda cifrada y nadie más la ve. Si alguien tiene movimientos, se desactiva en lugar de borrarse.</p>
+     <p class="mut">Cada persona entra a Cargar con su legajo y contraseña. La contraseña la escribe la propia persona con <b>Definir contraseña</b>: queda cifrada y nadie más la ve. Al borrar a alguien, sus movimientos se conservan en el historial.</p>
      <div id="ppanel" class="card" hidden style="margin:0 0 12px;max-width:520px">
        <b id="ptitulo"></b>
        <p class="mut" style="margin:4px 0 8px">Que la persona escriba su contraseña (mín. 4 caracteres).</p>
@@ -676,7 +676,7 @@ async function loadPers(){
     <td class=c>${p.activo?"Sí":"No"} <button class="btn sm" data-a="${p.activo?"desactivar":"activar"}" type=button>${p.activo?"Desactivar":"Activar"}</button></td>
     <td class=n>${p.usos}</td>
     <td style="white-space:nowrap"><button class="btn sm" data-a="editar" disabled type=button>Guardar</button>
-    ${p.usos?"":`<button class="btn sm" data-a="borrar" type=button>Borrar</button>`}</td></tr>`).join("");
+    <button class="btn sm" data-a="borrar" data-u="${p.usos}" type=button>Borrar</button></td></tr>`).join("");
   $("pt").innerHTML = h;
   $("pt").querySelectorAll("tr[data-fila] input").forEach(i => i.oninput = () => { const tr = i.closest("tr"); tr.classList.add("dirty"); tr.querySelector("[data-a=editar]").disabled = false; });
   $("pt").querySelector("[data-nuevo]").onclick = e => {
@@ -689,7 +689,7 @@ async function loadPers(){
     const tr = b.closest("tr"), g = k => tr.querySelector(`[data-f=${k}]`).value.trim();
     const base = {accion:b.dataset.a, fila:+tr.dataset.fila, nombre_actual:tr.dataset.n, legajo:g("legajo"), nombre:g("nombre"), obs:g("obs")};
     if(b.dataset.a === "clave"){ abrirClave(base); return; }
-    if(b.dataset.a === "borrar" && !confirm(`¿Borrar a ${tr.dataset.n}?`)) return;
+    if(b.dataset.a === "borrar" && !confirm(`¿Borrar a ${tr.dataset.n}?` + (+b.dataset.u ? `\n\nTiene ${b.dataset.u} movimiento(s): se conservan en el historial con su nombre.` : ""))) return;
     persona(base);
   });
 }
