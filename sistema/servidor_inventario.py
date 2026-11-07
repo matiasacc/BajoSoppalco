@@ -186,6 +186,51 @@ def snapshot():
         return wb, items, movs, st, npend
 
 
+# ---------------------------------------------------------------- fotos de productos
+FOTOS = os.path.join(cm.DATOS, "fotos")
+RE_COD = re.compile(r"^[A-Z0-9][A-Z0-9\-]{0,11}$")
+
+
+def foto_path(cod):
+    return os.path.join(FOTOS, f"{cod}.jpg")
+
+
+def foto_version(cod):
+    """0 si no tiene foto; si tiene, su fecha (sirve para refrescar la imagen en el navegador)."""
+    p = foto_path(cod)
+    return int(os.path.getmtime(p)) if os.path.isfile(p) else 0
+
+
+def api_admin_foto(body):
+    import base64
+    cod = cm.norm(body.get("cod")).upper()
+    if not RE_COD.match(cod):
+        return 400, dict(error="Código inválido.")
+    with LOCK:
+        items = cm.read_maestro(openpyxl.load_workbook(cm.XLSX))
+    if cod not in items:
+        return 400, dict(error=f"No existe {cod}.")
+    if body.get("borrar"):
+        try:
+            os.remove(foto_path(cod))
+        except OSError:
+            pass
+        return 200, dict(ok=True, msg=f"Foto de {cod} quitada.")
+    data = cm.norm(body.get("data"))
+    if not data.startswith("data:image/jpeg;base64,"):
+        return 400, dict(error="Formato de imagen no válido.")
+    try:
+        raw = base64.b64decode(data.split(",", 1)[1], validate=True)
+    except Exception:
+        return 400, dict(error="Imagen dañada.")
+    if raw[:3] != b"\xff\xd8\xff" or len(raw) > 1_500_000:
+        return 400, dict(error="La imagen no es un JPG válido o es demasiado grande.")
+    os.makedirs(FOTOS, exist_ok=True)
+    with open(foto_path(cod), "wb") as fh:
+        fh.write(raw)
+    return 200, dict(ok=True, msg=f"Foto de {cod} guardada.")
+
+
 # ---------------------------------------------------------------- copias de seguridad
 BACKUPS = os.path.join(cm.DATOS, "backups")
 MAX_AUTO, MAX_MANUAL = 30, 10
@@ -251,7 +296,8 @@ def api_datos():
         lst.append(dict(cod=c, ins=it["ins"], sec=it["sec"], ubi=it["ubi"], ub=it["ub"], emp=it["emp"],
                         fac=it["fac"], emp2=it["emp2"], fac2=it["fac2"], bar=it["bar"],
                         ini=it["ini"] if not isinstance(it["ini"], str) else None,
-                        act=None if s["falta"] else s["act"], estado=s["estado"], min=it["min"]))
+                        act=None if s["falta"] else s["act"], estado=s["estado"], min=it["min"],
+                        foto=foto_version(c)))
     ult = []
     for m in list(reversed(movs))[:15]:
         ult.append(dict(fecha=m["fecha"].strftime("%d/%m/%Y"), tipo=m["tipo"], cod=m["cod"],
@@ -389,7 +435,8 @@ def api_admin_maestro_get():
         it, s = items[c], st[c]
         out.append(dict(cod=c, ins=it["ins"], sec=it["sec"], ubi=it["ubi"], ub=it["ub"], emp=it["emp"],
                         fac=it["fac"], emp2=it["emp2"], fac2=it["fac2"], bar=it["bar"], sie=it["sie"], sis=it["sis"], min=it["min"], obs=it["obs"],
-                        act=None if s["falta"] else s["act"], estado=s["estado"], nmov=nmov.get(c, 0)))
+                        act=None if s["falta"] else s["act"], estado=s["estado"], nmov=nmov.get(c, 0),
+                        foto=foto_version(c)))
     return 200, dict(items=out)
 
 
@@ -511,6 +558,10 @@ def api_admin_maestro_post(body):
             r = items[cod]["fila"]
             mae.delete_rows(r)
             _reescribir_formulas_maestro(mae, r)
+            try:
+                os.remove(foto_path(cod))
+            except OSError:
+                pass
             msg = f"{cod} borrado."
         else:
             return 400, dict(error="Acción desconocida")
@@ -745,6 +796,13 @@ class H(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             with open(APP, encoding="utf-8") as fh:
                 return self._send(200, fh.read(), "text/html; charset=utf-8")
+        if path.startswith("/foto/"):
+            cod = path[len("/foto/"):].upper()
+            p = foto_path(cod)
+            if not RE_COD.match(cod) or not os.path.isfile(p):
+                return self._send(404, dict(error="Sin foto"))
+            with open(p, "rb") as fh:
+                return self._send(200, fh.read(), "image/jpeg", {"Cache-Control": "max-age=86400"})
         if path in ("/favicon.ico", "/icono.png"):
             f = os.path.join(BASE, "inventario.ico" if path.endswith(".ico") else "icono.png")
             if os.path.exists(f):
@@ -833,6 +891,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, dict(ok=True))
             if path == "/api/admin/backup":
                 return self._guard(api_admin_backup_post)
+            if path == "/api/admin/foto":
+                return self._guard(api_admin_foto, body)
             if path == "/api/admin/salir":
                 TOKENS.pop(self._token(), None)
                 return self._send(200, dict(ok=True))

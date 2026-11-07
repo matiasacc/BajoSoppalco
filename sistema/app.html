@@ -20,6 +20,7 @@ nav button.tema{margin-left:8px;color:var(--mut)}
 nav button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
 main{max-width:none;margin:0 auto;padding:16px 20px}
 section[hidden]{display:none}
+[hidden]{display:none !important}
 h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;border-bottom:1px solid var(--ln);padding-bottom:4px}
 label{display:block;font-size:12px;color:var(--mut);margin-bottom:10px}
 input,select,textarea{display:block;width:100%;margin-top:3px;padding:8px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--ln);border-radius:0}
@@ -71,6 +72,7 @@ iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);backgrou
 .subnav .btn.on{background:var(--ac);color:var(--acf)}
 .banner{background:var(--hd);border:1px solid var(--ln);padding:8px 10px;margin-bottom:12px;font-size:13px}
 .banner:empty{display:none}
+img.th{width:34px;height:34px;object-fit:cover;vertical-align:middle;cursor:pointer;border:1px solid var(--ln);margin-right:4px}
 .sesbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--ln);border-left:4px solid var(--ac);padding:8px 10px;margin-bottom:14px}
 a{color:var(--fg)}
 input.scan{font-size:18px;padding:12px;border:2px solid var(--ac)}
@@ -182,6 +184,7 @@ tr.flash td{animation:fl 1s ease-out}
      <button class="btn" data-sub="maestro" type="button">Maestro</button>
      <button class="btn" data-sub="movs" type="button">Movimientos</button>
      <button class="btn" data-sub="pers" type="button">Personas</button>
+     <button class="btn" data-sub="etiq" type="button">Etiquetas</button>
      <button class="btn" data-sub="cuenta" type="button">Cuenta / Excel</button>
      <button class="btn" id="salir" type="button">Salir</button>
      <span id="aresta" class="mut" style="align-self:center;margin-left:6px"></span>
@@ -193,7 +196,7 @@ tr.flash td{animation:fl 1s ease-out}
      <span class="mut">Editar en la celda y tocar Guardar en la fila. Las cantidades van en la unidad base.</span></div>
      <div class="tw"><table class="mt">
       <thead><tr><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Unidad base</th><th>Empaque 1</th><th>Cant. x emp. 1</th><th>Empaque 2</th><th>Cant. x emp. 2</th>
-      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo (u. base)</th><th>Observaciones</th><th>Código de barras</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
+      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo (u. base)</th><th>Observaciones</th><th>Código de barras</th><th>Foto</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
       <tbody id="mt"></tbody>
      </table></div>
    </div>
@@ -226,6 +229,21 @@ tr.flash td{animation:fl 1s ease-out}
      <a id="abrirInv" href="#">Abrir en ventana nueva</a></div>
      <iframe id="ifr" title="Inventario"></iframe>
    </div>
+
+   <div id="s-etiq" hidden>
+     <div class="bar">
+       <input id="ef" placeholder="Filtrar por código, nombre o sector" style="max-width:300px;margin:0">
+       <label style="margin:0">Etiquetas por hoja
+         <select id="etam" style="display:inline-block;width:auto;margin:0 0 0 4px"><option value="1">1</option><option value="4">4</option><option value="6" selected>6</option><option value="12">12</option></select></label>
+       <button id="etodos" class="btn sm" type="button">Todas</button>
+       <button id="eninguno" class="btn sm" type="button">Ninguna</button>
+       <button id="eimprimir" class="btn pri" type="button">Generar PDF / imprimir</button>
+     </div>
+     <p class="mut">Se abre una ventana con las hojas armadas (A4). En el cuadro de impresión elegir <b>Guardar como PDF</b> o la impresora.
+     El código de barras usa la columna <i>Código de barras</i> del Maestro, o el código del insumo si está vacía. Las fotos se cargan en el Maestro.</p>
+     <div class="tw"><table><thead><tr><th></th><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Foto</th><th>Código de barras</th></tr></thead><tbody id="et"></tbody></table></div>
+   </div>
+   <input id="ffile" type="file" accept="image/*" hidden>
 
    <div id="s-cuenta" hidden class="form">
      <h3>Descargar Excel</h3>
@@ -596,13 +614,14 @@ $("pw").onkeydown = e => { if(e.key==="Enter") $("entrar").click(); };
 $("salir").onclick = async () => { cerrarClave(); await api("/api/admin/salir", {}); sess.set(""); showLogin(); };
 document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = () => {
   document.querySelectorAll(".subnav button[data-sub]").forEach(x => x.classList.toggle("on", x===b));
-  ["inv","maestro","movs","pers","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
+  ["inv","maestro","movs","pers","etiq","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
   msg($("amsg"), "");
   if(b.dataset.sub==="inv") $("ifr").src = urlInv();
   if(b.dataset.sub==="maestro") loadMaestro();
   if(b.dataset.sub==="movs") loadMovs();
   if(b.dataset.sub==="pers") loadPers();
   if(b.dataset.sub==="cuenta") loadBackups();
+  if(b.dataset.sub==="etiq") loadEtiq();
 });
 
 const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","o"],["bar",""]];
@@ -615,8 +634,9 @@ const PH = {ins:"Insumo", sec:"Sector", ubi:"Ubic.", ub:"Unidad base", emp:"Empa
 function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls}" value="${esc(v??"")}" title="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal"':""}></td>`; }
 function renderMaestro(){
   const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
-  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
+  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
   h += rows.map(i => `<tr data-c="${esc(i.cod)}" class="${claseEstado(i.estado)}" title="${esc(i.estado)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
+       `<td class=c style="white-space:nowrap">${i.foto ? `<img class="th" src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" data-fsub title="Cambiar foto" alt=""><button class="btn sm" data-fdel type="button" title="Quitar foto">✕</button>` : `<button class="btn sm" data-fsub type="button">Subir</button>`}</td>` +
        `<td class="n st">${i.act===null?"*":fmt(i.act)}</td><td class=n>${i.nmov}</td><td style="white-space:nowrap"><button class="btn sm" data-save disabled type="button">Guardar</button> ${i.nmov?"":`<button class="btn sm" data-del type="button">Borrar</button>`}</td></tr>`).join("");
   $("mt").innerHTML = h;
   $("mt").querySelectorAll("tr[data-c] input").forEach(inp => inp.oninput = () => { const tr = inp.closest("tr"); tr.classList.add("dirty"); tr.querySelector("[data-save]").disabled = false; });
@@ -634,6 +654,14 @@ function renderMaestro(){
     msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
     if(r.ok){ await loadMaestro(); cargarDatos(); }
   });
+  $("mt").querySelectorAll("[data-fsub]").forEach(b => b.onclick = () => { FOTO_COD = b.closest("tr").dataset.c; $("ffile").value = ""; $("ffile").click(); });
+  $("mt").querySelectorAll("[data-fdel]").forEach(b => b.onclick = async () => {
+    const cod = b.closest("tr").dataset.c;
+    if(!confirm(`¿Quitar la foto de ${cod}?`)) return;
+    const r = await api("/api/admin/foto", {cod, borrar:true});
+    msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+    if(r.ok){ await loadMaestro(); cargarDatos(); }
+  });
   $("mt").querySelector("[data-new]").onclick = async e => {
     const tr = e.target.closest("tr"), campos = {}; let cod = "";
     tr.querySelectorAll("input[data-f]").forEach(x => { if(x.dataset.f==="cod") cod = x.value.trim(); else campos[x.dataset.f] = x.value.trim(); });
@@ -643,6 +671,109 @@ function renderMaestro(){
   };
 }
 $("mf").oninput = renderMaestro;
+
+/* ---- fotos: se achican en el navegador (máx. 900 px, JPG) antes de subirlas ---- */
+let FOTO_COD = null;
+async function achicarImagen(file, max){
+  let img;
+  try{ img = await createImageBitmap(file, {imageOrientation:"from-image"}); }
+  catch(e){ img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = URL.createObjectURL(file); }); }
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+$("ffile").onchange = async () => {
+  const f = $("ffile").files[0]; if(!f || !FOTO_COD) return;
+  msg($("amsg"), "Subiendo foto…");
+  let data; try{ data = await achicarImagen(f, 900); }catch(e){ msg($("amsg"), "No se pudo leer la imagen.", "err"); return; }
+  const r = await api("/api/admin/foto", {cod:FOTO_COD, data});
+  msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+  if(r.ok){ if(!$("s-maestro").hidden) await loadMaestro(); else await loadEtiq(); cargarDatos(); }
+};
+
+/* ---- etiquetas / catálogo para imprimir ---- */
+/* Código de barras Code 128 (juego B) en SVG */
+const C128 = ["212222","222122","222221","121223","121322","131222","122213","122312","132212","221213","221312","231212","112232","122132","122231","113222","123122","123221","223211","221132","221231","213212","223112","312131","311222","321122","321221","312212","322112","322211","212123","212321","232121","111323","131123","131321","112313","132113","132311","211313","231113","231311","112133","112331","132131","113123","113321","133121","313121","211331","231131","213113","213311","213131","311123","311321","331121","312113","312311","332111","314111","221411","431111","111224","111422","121124","121421","141122","141221","112214","112412","122114","122411","142112","142211","241211","221114","413111","241112","134111","111242","121142","121241","114212","124112","124211","411212","421112","421211","212141","214121","412121","111143","111341","131141","114113","114311","411113","411311","113141","114131","311141","411131","211412","211214","211232","2331112"];
+function code128Modulos(texto){
+  const vals = [104];
+  for(const ch of String(texto)){ const c = ch.charCodeAt(0); if(c >= 32 && c <= 126) vals.push(c - 32); }
+  let suma = 104; for(let i = 1; i < vals.length; i++) suma += vals[i] * i;
+  vals.push(suma % 103); vals.push(106);
+  let bits = "";
+  vals.forEach(v => { const p = C128[v]; for(let i = 0; i < p.length; i++) bits += (i % 2 === 0 ? "1" : "0").repeat(+p[i]); });
+  return bits;
+}
+function code128SVG(texto, alto){
+  const bits = code128Modulos(texto), q = 10, W = bits.length + 2*q, H = alto || 50;
+  let r = "", i = 0;
+  while(i < bits.length){ if(bits[i] === "1"){ let j = i; while(j < bits.length && bits[j] === "1") j++; r += `<rect x="${i+q}" y="0" width="${j-i}" height="${H}"/>`; i = j; } else i++; }
+  return `<svg class="bc" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${r}</svg>`;
+}
+
+let ESEL = null;
+async function loadEtiq(){
+  const r = await api("/api/admin/maestro"); if(!r.ok) return;
+  M = r.d.items;
+  if(!ESEL) ESEL = new Set(M.map(i => i.cod));
+  renderEtiq();
+}
+function etiqFiltradas(){ return M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("ef").value)); }
+function renderEtiq(){
+  const rows = etiqFiltradas();
+  $("et").innerHTML = rows.map(i => `<tr data-c="${esc(i.cod)}"><td class=c><input type=checkbox ${ESEL.has(i.cod)?"checked":""} style="width:auto;display:inline;margin:0"></td>
+    <td>${esc(i.cod)}</td><td>${esc(i.ins)}</td><td>${esc(i.sec)}</td><td>${esc(i.ubi)}</td>
+    <td class=c>${i.foto ? `<img class="th" src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" alt="">` : `<span class=mut>—</span>`}</td>
+    <td>${esc(i.bar || i.cod)}</td></tr>`).join("") || `<tr><td colspan=7 class=mut>Sin insumos</td></tr>`;
+  $("et").querySelectorAll("input[type=checkbox]").forEach(ch => ch.onchange = () => { const c = ch.closest("tr").dataset.c; ch.checked ? ESEL.add(c) : ESEL.delete(c); });
+}
+$("ef").oninput = renderEtiq;
+$("etodos").onclick = () => { etiqFiltradas().forEach(i => ESEL.add(i.cod)); renderEtiq(); };
+$("eninguno").onclick = () => { etiqFiltradas().forEach(i => ESEL.delete(i.cod)); renderEtiq(); };
+function htmlEtiquetas(items, porHoja){
+  const [C, F] = {1:[1,1], 4:[2,2], 6:[2,3], 12:[3,4]}[porHoja];
+  const bc = {1:32, 4:20, 6:17, 12:12}[porHoja], fs = {1:28, 4:17, 6:15, 12:11}[porHoja];
+  const tarjeta = i => {
+    const val = i.bar || i.cod;
+    return `<div class="et">
+      <div class="foto">${i.foto ? `<img src="${location.origin}/foto/${encodeURIComponent(i.cod)}?v=${i.foto}">` : `<span>Sin foto</span>`}</div>
+      <div class="nom">${esc(i.ins)}</div>
+      <div class="meta">${esc(i.cod)}${i.sec ? " · " + esc(i.sec) : ""}${i.ubi ? " · Ubic. " + esc(i.ubi) : ""}</div>
+      <div class="meta">Unidad: ${esc(i.ub)}${i.emp && i.fac ? ` · ${esc(i.emp)} x ${fmt(i.fac)}` : ""}</div>
+      <div class="bcw">${code128SVG(val, 50)}</div>
+      <div class="bct">${esc(val)}</div></div>`;
+  };
+  let hojas = "";
+  for(let k = 0; k < items.length; k += C*F) hojas += `<div class="hoja">${items.slice(k, k + C*F).map(tarjeta).join("")}</div>`;
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas - Inventario Bajo Soppalco</title>
+<style>
+@page{size:A4;margin:10mm}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;background:#e9e9e9}
+.barra{position:sticky;top:0;background:#2f2f2f;color:#fff;padding:10px 16px;font:14px Arial;display:flex;gap:12px;align-items:center}
+.barra button{font:bold 14px Arial;padding:7px 14px;cursor:pointer}
+.hoja{width:190mm;height:277mm;margin:10mm auto;background:#fff;display:grid;grid-template-columns:repeat(${C},1fr);grid-template-rows:repeat(${F},1fr);gap:4mm;padding:0}
+.et{border:.3mm solid #000;padding:3.5mm;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.foto{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;border-bottom:.2mm solid #aaa;margin-bottom:2mm;padding-bottom:2mm}
+.foto img{max-width:100%;max-height:100%;object-fit:contain}
+.foto span{color:#999;font-size:10pt}
+.nom{font-weight:bold;font-size:${fs}pt;line-height:1.15}
+.meta{font-size:${Math.max(8, fs*0.55).toFixed(1)}pt;color:#333;margin-top:.8mm}
+.bcw{height:${bc}mm;margin-top:2mm} .bcw svg{width:100%;height:100%;display:block}
+.bct{text-align:center;font-family:Consolas,"Courier New",monospace;font-size:${Math.max(8, fs*0.6).toFixed(1)}pt;letter-spacing:.5mm;margin-top:.5mm}
+@media print{ body{background:#fff} .barra{display:none} .hoja{margin:0;break-after:page} .hoja:last-child{break-after:auto} }
+</style></head><body>
+<div class="barra"><button onclick="print()">Imprimir / Guardar como PDF</button><span>${items.length} etiqueta(s) · ${porHoja} por hoja</span></div>
+${hojas}
+<script>Promise.all([...document.images].map(i => i.complete ? 1 : new Promise(r => { i.onload = i.onerror = r; }))).then(() => setTimeout(() => print(), 300));<\/script>
+</body></html>`;
+}
+$("eimprimir").onclick = () => {
+  const items = M.filter(i => ESEL.has(i.cod));
+  if(!items.length){ msg($("amsg"), "No hay etiquetas seleccionadas.", "err"); return; }
+  const w = window.open("", "_blank");
+  if(!w){ msg($("amsg"), "El navegador bloqueó la ventana: permitir ventanas emergentes para este sitio.", "err"); return; }
+  w.document.open(); w.document.write(htmlEtiquetas(items, +$("etam").value)); w.document.close();
+};
 
 async function loadMovs(){
   const r = await api("/api/admin/movimientos"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
