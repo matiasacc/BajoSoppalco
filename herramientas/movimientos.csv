@@ -1,0 +1,4 @@
+﻿fecha;tipo;codigo;cantidad;unidad;persona;obs
+# ejemplo (las filas con # no se cargan):
+# 19/10/2026;S;CIN-07;8;;Juan Perez;
+# 20/10/2026;E;CIN-08;10;Caja;Ana Gomez;compra

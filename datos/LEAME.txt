@@ -1,0 +1,5 @@
+Carpeta de datos del inventario.
+
+Aca queda Inventario_Bajo_Soppalco.xlsx con los datos reales. No se sube al repositorio.
+Si la planilla no existe, el programa crea una vacia al arrancar.
+Copia de seguridad: copiar esta carpeta periodicamente.

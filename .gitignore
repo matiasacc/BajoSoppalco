@@ -1,0 +1,17 @@
+# Datos reales del inventario: NUNCA se suben al repositorio
+datos/*
+!datos/LEAME.txt
+
+# Archivos que genera el programa en cada PC
+sistema/config_inventario.json
+sistema/python_path.txt
+sistema/*.log
+sistema/solo_local.on
+herramientas/cargados/
+__pycache__/
+*.pyc
+
+# Temporales de Excel / Windows
+~$*
+Thumbs.db
+desktop.ini

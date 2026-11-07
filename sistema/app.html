@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventario Bajo Soppalco</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="256x256" href="/icono.png">
+<style>
+:root{--bg:#fff;--fg:#1d1d1d;--mut:#666;--ln:#d0d0d0;--hd:#f2f2f2;--ac:#2f2f2f;--acf:#fff;--ok:#1d6b2f;--err:#b00020;--warn:#8a5a00;--sel:#eef3f8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33}}
+:root[data-theme="dark"]{--bg:#161616;--fg:#e8e8e8;--mut:#9a9a9a;--ln:#3a3a3a;--hd:#222;--ac:#e0e0e0;--acf:#111;--ok:#6fcf87;--err:#ff7b8b;--warn:#e6b45a;--sel:#1f2a33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 Arial,Helvetica,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:2px solid var(--ac)}
+header b{font-size:16px}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:1px solid var(--ln);color:var(--fg);padding:7px 12px;font:inherit;cursor:pointer}
+nav button.tema{margin-left:8px;color:var(--mut)}
+nav button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+main{max-width:1180px;margin:0 auto;padding:16px}
+section[hidden]{display:none}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;border-bottom:1px solid var(--ln);padding-bottom:4px}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:10px}
+input,select,textarea{display:block;width:100%;margin-top:3px;padding:8px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--ln);border-radius:0}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.grid{display:grid;gap:0 12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.form{max-width:680px}
+.tipo{display:grid;grid-template-columns:1fr 1fr;margin:4px 0 12px}
+.tipo button{padding:12px;font:bold 15px Arial;border:1px solid var(--ln);background:var(--bg);color:var(--fg);cursor:pointer}
+.tipo button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.btn{padding:9px 14px;font:inherit;border:1px solid var(--ac);background:var(--bg);color:var(--fg);cursor:pointer}
+.btn.pri{background:var(--ac);color:var(--acf);font-weight:bold}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.sm{padding:4px 8px;font-size:12px}
+.sug{border:1px solid var(--ln);border-top:0;margin:-10px 0 10px;max-height:300px;overflow:auto}
+.sug:empty{display:none}
+.sug div{padding:8px;cursor:pointer;border-top:1px solid var(--ln);display:flex;justify-content:space-between;gap:8px}
+.sug div:hover,.sug div.act{background:var(--sel)}
+.sug small{color:var(--mut);white-space:nowrap}
+.card{border:1px solid var(--ln);border-left:4px solid var(--ac);padding:8px 10px;margin:-4px 0 12px;font-size:13px}
+.card:empty{display:none}
+.msg{padding:8px 10px;margin:10px 0;border:1px solid}
+.msg:empty{display:none}
+.msg.ok{color:var(--ok);border-color:var(--ok)} .msg.err{color:var(--err);border-color:var(--err)} .msg.warn{color:var(--warn);border-color:var(--warn)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--ln);padding:5px 6px;text-align:left;vertical-align:middle;font-size:13px}
+th{background:var(--hd);font-size:12px}
+td.n{text-align:right;font-variant-numeric:tabular-nums} td.c{text-align:center}
+.mut{color:var(--mut)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);background:var(--bg)}
+.mt td{padding:2px}
+.mt input{margin:0;padding:4px;min-width:60px;font-size:13px;border-color:transparent;background:transparent}
+.mt input:hover{border-color:var(--ln)}
+.mt tr.dirty td{background:var(--sel)}
+.mt input.w{min-width:200px}
+.subnav{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.subnav .btn.on{background:var(--ac);color:var(--acf)}
+.banner{background:var(--hd);border:1px solid var(--ln);padding:8px 10px;margin-bottom:12px;font-size:13px}
+.banner:empty{display:none}
+.sesbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--ln);border-left:4px solid var(--ac);padding:8px 10px;margin-bottom:14px}
+a{color:var(--fg)}
+input.scan{font-size:18px;padding:12px;border:2px solid var(--ac)}
+.lt td{padding:3px 5px}
+.lt select,.lt input{margin:0;padding:5px;display:inline-block;width:auto}
+.lt input.qty{width:70px;text-align:right}
+.lt input[data-f=obs]{width:100%;min-width:120px}
+tr.flash td{animation:fl 1s ease-out}
+@keyframes fl{from{background:var(--sel)}to{background:transparent}}
+</style>
+</head>
+<body>
+<header>
+  <b>Inventario Bajo Soppalco</b>
+  <nav>
+    <button data-tab="carga" class="on">Cargar</button>
+    <button data-tab="inv">Inventario</button>
+    <button data-tab="admin">Administración</button>
+    <button id="tema" class="tema" type="button" title="Cambiar modo claro / oscuro">Modo oscuro</button>
+  </nav>
+</header>
+<main>
+<div id="banner" class="banner"></div>
+
+<!-- ============ CARGA ============ -->
+<section id="carga">
+ <div id="ingreso" class="form">
+   <h3>Ingresar para cargar</h3>
+   <div class="grid">
+     <label>Legajo<input id="ilegajo" autocomplete="username" inputmode="numeric"></label>
+     <label>Contraseña<input id="iclave" type="password" autocomplete="current-password"></label>
+   </div>
+   <button id="ientrar" class="btn pri" type="button">Ingresar</button>
+   <div id="imsg" class="msg"></div>
+ </div>
+
+ <div id="cambio" class="form" hidden>
+   <h3>Cambiar contraseña</h3>
+   <p id="ctxt" class="mut"></p>
+   <label id="lactual">Contraseña actual<input id="cactual" type="password" autocomplete="current-password"></label>
+   <label>Nueva (mín. 4 caracteres)<input id="cnueva" type="password" autocomplete="new-password"></label>
+   <label>Repetir nueva<input id="cnueva2" type="password" autocomplete="new-password"></label>
+   <div class="bar"><button id="cguardar" class="btn pri" type="button">Guardar</button>
+   <button id="ccancelar" class="btn" type="button">Cancelar</button></div>
+   <div id="cmsg" class="msg"></div>
+ </div>
+
+ <div id="trabajo" hidden>
+ <div class="sesbar">
+   <span>Ingresado: <b id="snombre"></b> · legajo <span id="slegajo"></span> <span id="sresta" class="mut"></span></span>
+   <span class="bar" style="margin:0"><button id="smiclave" class="btn sm" type="button">Cambiar mi contraseña</button>
+   <button id="ssalir" class="btn sm pri" type="button">Salir</button></span>
+ </div>
+ <div class="cols">
+  <div class="form">
+   <div class="tipo">
+     <button id="tS" class="on" type="button">SALIDA</button>
+     <button id="tE" type="button">ENTRADA</button>
+   </div>
+   <label>Escanear código (lectora)<input id="scan" class="scan" autocomplete="off" placeholder="Pasar la lectora, o escribir el código y Enter"></label>
+   <div id="smsg" class="msg"></div>
+
+   <h3>Agregar a mano</h3>
+   <label>Insumo (código o nombre)<input id="buscar" autocomplete="off" placeholder="ej: transparente, CIN-07"></label>
+   <div id="sug" class="sug"></div>
+   <div id="card" class="card"></div>
+   <div class="grid">
+     <label>Cantidad<input id="cant" inputmode="decimal" autocomplete="off"></label>
+     <label>Unidad<select id="uni"></select></label>
+   </div>
+   <label>Observación (opcional)<input id="obs" autocomplete="off"></label>
+   <div id="aviso" class="msg warn"></div>
+   <button id="agregar" class="btn" type="button">Agregar a la lista</button>
+  </div>
+ </div>
+
+ <h3>Lista a cargar (<span id="nl">0</span>)</h3>
+ <div class="tw"><table class="lt">
+  <thead><tr><th>E/S</th><th>Código</th><th>Insumo</th><th>Cantidad</th><th>Unidad</th><th>Obs.</th><th></th></tr></thead>
+  <tbody id="lista"><tr><td colspan="7" class="mut">Vacía</td></tr></tbody>
+ </table></div>
+ <p id="lnota" class="mut" style="font-size:12px;margin:6px 0 0"></p>
+
+ <div id="msg" class="msg"></div>
+ <div class="bar" style="margin-top:10px"><button id="cargar" class="btn pri" type="button" disabled>Cargar al inventario</button>
+ <button id="vaciar" class="btn" type="button">Vaciar lista</button></div>
+ </div>
+
+ <h3>Últimos movimientos</h3>
+ <div class="tw"><table>
+  <thead><tr><th>Fecha</th><th>E/S</th><th>Código</th><th>Insumo</th><th>Cant.</th><th>Unidad</th><th>Persona</th></tr></thead>
+  <tbody id="ult"></tbody>
+ </table></div>
+</section>
+
+<!-- ============ INVENTARIO ============ -->
+<section id="inv" hidden>
+  <div class="bar"><button id="recInv" class="btn" type="button">Actualizar</button>
+  <a id="abrirInv" href="/inventario" target="_blank">Abrir en ventana nueva</a></div>
+  <iframe id="ifr" title="Inventario"></iframe>
+</section>
+
+<!-- ============ ADMIN ============ -->
+<section id="admin" hidden>
+ <div id="login" class="form">
+   <h3>Ingreso administradores</h3>
+   <label>Contraseña<input id="pw" type="password" autocomplete="current-password"></label>
+   <button id="entrar" class="btn pri" type="button">Ingresar</button>
+   <div id="lmsg" class="msg"></div>
+ </div>
+ <div id="adm" hidden>
+   <div class="subnav">
+     <button class="btn on" data-sub="maestro" type="button">Maestro</button>
+     <button class="btn" data-sub="movs" type="button">Movimientos</button>
+     <button class="btn" data-sub="pers" type="button">Personas</button>
+     <button class="btn" data-sub="cuenta" type="button">Cuenta / Excel</button>
+     <button class="btn" id="salir" type="button">Salir</button>
+     <span id="aresta" class="mut" style="align-self:center;margin-left:6px"></span>
+   </div>
+   <div id="amsg" class="msg"></div>
+
+   <div id="s-maestro">
+     <div class="bar"><input id="mf" placeholder="Filtrar por código, nombre o sector" style="max-width:320px;margin:0">
+     <span class="mut">Editar en la celda y tocar Guardar en la fila. Las cantidades van en la unidad base.</span></div>
+     <div class="tw"><table class="mt">
+      <thead><tr><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Unidad base</th><th>Empaque 1</th><th>Cant. x emp. 1</th><th>Empaque 2</th><th>Cant. x emp. 2</th>
+      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo</th><th>Observaciones</th><th>Código de barras</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
+      <tbody id="mt"></tbody>
+     </table></div>
+   </div>
+
+   <div id="s-movs" hidden>
+     <div class="bar"><input id="vf" placeholder="Filtrar (fecha, código, insumo, persona...)" style="max-width:320px;margin:0">
+     <span class="mut">Últimos 300 que coinciden. Editar corrige E/S, cantidad, unidad o persona (la fecha no se cambia; queda anotado en Obs.). Anular pasa la fila a la hoja "Anulados".</span></div>
+     <div class="tw"><table>
+      <thead><tr><th>Fila</th><th>Fecha</th><th>E/S</th><th>Código</th><th>Insumo</th><th>Cant.</th><th>Unidad</th><th>Persona</th><th>Origen</th><th>Obs.</th><th></th></tr></thead>
+      <tbody id="vt"></tbody>
+     </table></div>
+   </div>
+
+   <div id="s-pers" hidden>
+     <p class="mut">Cada persona entra a Cargar con su legajo y contraseña. La contraseña la escribe la propia persona con <b>Definir contraseña</b>: queda cifrada y nadie más la ve. Si alguien tiene movimientos, se desactiva en lugar de borrarse.</p>
+     <div id="ppanel" class="card" hidden style="margin:0 0 12px;max-width:520px">
+       <b id="ptitulo"></b>
+       <p class="mut" style="margin:4px 0 8px">Que la persona escriba su contraseña (mín. 4 caracteres).</p>
+       <div class="grid">
+         <label>Contraseña<input id="pc1" type="password" autocomplete="new-password"></label>
+         <label>Repetir<input id="pc2" type="password" autocomplete="new-password"></label>
+       </div>
+       <div class="bar"><button id="pcok" class="btn pri" type="button">Guardar</button><button id="pcno" class="btn" type="button">Cancelar</button></div>
+     </div>
+     <div class="tw"><table class="mt"><thead><tr><th>Legajo</th><th>Nombre</th><th>Observaciones</th><th>Contraseña</th><th>Activo</th><th>Mov.</th><th></th></tr></thead><tbody id="pt"></tbody></table></div>
+   </div>
+
+   <div id="s-cuenta" hidden class="form">
+     <h3>Descargar Excel</h3>
+     <a id="dl" class="btn" href="#">Descargar Inventario_Bajo_Soppalco.xlsx</a>
+     <h3>Cambiar contraseña</h3>
+     <label>Actual<input id="pa" type="password" autocomplete="current-password"></label>
+     <label>Nueva (mín. 6 caracteres)<input id="pn" type="password" autocomplete="new-password"></label>
+     <label>Repetir nueva<input id="pn2" type="password" autocomplete="new-password"></label>
+     <button id="cambiar" class="btn pri" type="button">Cambiar</button>
+   </div>
+ </div>
+</section>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("invbs_"+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("invbs_"+k, JSON.stringify(v)); }catch(e){} }
+};
+/* modo claro / oscuro (se recuerda en esta PC) */
+function aplicarTema(t){
+  document.documentElement.dataset.theme = t === "oscuro" ? "dark" : "light";
+  const b = document.getElementById("tema"); if(b) b.textContent = t === "oscuro" ? "Modo claro" : "Modo oscuro";
+}
+let TEMA = store.get("tema", "claro");
+aplicarTema(TEMA);
+const sess = {
+  get(){ try{ return sessionStorage.getItem("invbs_tok") || ""; }catch(e){ return TOK_MEM; } },
+  set(v){ TOK_MEM = v; try{ v ? sessionStorage.setItem("invbs_tok", v) : sessionStorage.removeItem("invbs_tok"); }catch(e){} }
+};
+let TOK_MEM = "";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hasAll = (hay, q) => { const h = nrm(hay); return nrm(q).split(/\s+/).filter(Boolean).every(w => h.includes(w)); };
+const nrm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const fmt = v => (v===null || v===undefined || v==="") ? "–" : (Math.abs(v-Math.round(v))<1e-9 ? Math.round(v).toLocaleString("es-AR") : v.toLocaleString("es-AR",{maximumFractionDigits:1}));
+const hoyISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const isoToAR = s => s.split("-").reverse().join("/");
+
+async function api(path, body){
+  const opt = {headers:{"Content-Type":"application/json","X-Token":sess.get(),"X-Sesion":USR ? USR.token : ""}};
+  if(body!==undefined){ opt.method="POST"; opt.body=JSON.stringify(body); }
+  try{
+    const r = await fetch(path, opt);
+    let d = {}; try{ d = await r.json(); }catch(e){}
+    if(r.status===401 && path.includes("/admin/")){ sess.set(""); showLogin(); }
+    return {ok:r.ok, status:r.status, d};
+  }catch(e){
+    return {ok:false, status:0, d:{error:"Sin conexión con el servidor. ¿Está abierta la ventana del servidor?"}};
+  }
+}
+function msg(el, text, cls){ el.className = "msg " + (cls||""); el.innerHTML = text || ""; }
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("on", x===b));
+  ["carga","inv","admin"].forEach(t => $(t).hidden = (t !== b.dataset.tab));
+  if(b.dataset.tab==="inv") $("ifr").src = urlInv();
+  if(b.dataset.tab==="admin" && sess.get()) enterAdmin();
+  if(b.dataset.tab==="carga") cargarDatos();
+});
+const urlInv = () => `/inventario?tema=${TEMA}&t=${Date.now()}`;
+$("recInv").onclick = () => $("ifr").src = urlInv();
+$("tema").onclick = () => {
+  TEMA = TEMA === "oscuro" ? "claro" : "oscuro"; store.set("tema", TEMA); aplicarTema(TEMA);
+  if(!$("inv").hidden) $("ifr").src = urlInv();
+};
+$("abrirInv").onclick = e => { e.preventDefault(); window.open(urlInv(), "_blank"); };
+
+/* ---------------- CARGA ---------------- */
+let D = {items:[], personas:[], ultimos:[]}, IT = {}, BAR = {}, tipo = store.get("tipo","SALIDA"), sel = null, lista = store.get("lista", []), sugIdx = 0;
+const normBar = s => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+function setTipo(t){ tipo=t; store.set("tipo",t); $("tS").classList.toggle("on",t==="SALIDA"); $("tE").classList.toggle("on",t==="ENTRADA"); if(sel) uniDefault(IT[sel]); checkAviso(); focoScan(); }
+/* Entrada a mano: por defecto en empaque (caja). Salida y lectora: unidad suelta. */
+function uniDefault(i){ $("uni").value = (tipo==="ENTRADA" && i.emp) ? i.emp : i.ub; }
+const plural = (w,n) => { w=(w||"").toLowerCase(); return (!w || n===1) ? w : w + (/[aeiou]$/.test(w) ? "s" : "es"); };
+function enEmp(i){ if(!i.emp || !i.fac || i.act===null || i.act<0) return ""; const c=Math.floor(i.act/i.fac), s=Math.round((i.act-c*i.fac)*10)/10; return `${c} ${plural(i.emp,c)}` + (s ? ` + ${fmt(s)} ${plural(i.ub,s)}` : ""); }
+$("tS").onclick = () => setTipo("SALIDA");
+$("tE").onclick = () => setTipo("ENTRADA");
+function focoScan(){ const a = document.activeElement; if(!$("carga").hidden && !$("trabajo").hidden && (!a || a===document.body || a.tagName==="BUTTON")) $("scan").focus(); }
+
+async function cargarDatos(){
+  const r = await api("/api/datos");
+  if(!r.ok){ $("banner").textContent = r.d.error || "No se pudieron leer los datos."; return; }
+  D = r.d; IT = {}; BAR = {};
+  D.items.forEach(i => { IT[i.cod]=i; BAR[normBar(i.cod)] = i.cod; });
+  D.items.forEach(i => { if(i.bar) BAR[normBar(i.bar)] = i.cod; });     // el código de barras propio tiene prioridad
+  $("ult").innerHTML = D.ultimos.length ? D.ultimos.map(m => `<tr><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td></tr>`).join("") : `<tr><td colspan=7 class=mut>Sin movimientos</td></tr>`;
+  $("banner").textContent = D.pendientes ? `${D.pendientes} movimiento(s) guardados en espera: el Excel está abierto en algún lado. Se pasan solos cuando se cierre.` : "";
+  if(sel && IT[sel]) showCard(sel);
+  lista = lista.filter(l => IT[l.cod]);
+  renderLista(); focoScan();
+}
+
+/* ---- sonido de confirmación ---- */
+let AC = null;
+function beep(ok){
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const tonos = ok ? [[1000, 0, .08]] : [[300, 0, .18], [300, .25, .18]];
+    tonos.forEach(([f, t0, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = f; o.type = "square"; g.gain.value = .06; o.connect(g); g.connect(AC.destination); o.start(AC.currentTime + t0); o.stop(AC.currentTime + t0 + d); });
+  }catch(e){}
+}
+
+/* ---- agregar a la lista (suma si ya está la misma combinación) ---- */
+function sumarALista(cod, cant, unidad, t, obs){
+  const k = lista.findIndex(l => l.cod===cod && l.unidad===unidad && l.tipo===t);
+  let l;
+  if(k >= 0){ l = lista[k]; l.cant = Math.round((l.cant + cant)*1000)/1000; if(obs) l.obs = obs; lista.splice(k,1); }
+  else l = {tipo:t, cod, ins:IT[cod].ins, cant, unidad, obs:obs||""};
+  lista.unshift(l);                                        // lo último arriba
+  store.set("lista", lista); renderLista(0);
+  return l;
+}
+
+/* ---- lectora ---- */
+function procesarScan(raw){
+  const code = String(raw||"").trim(); if(!code) return;
+  const cod = BAR[normBar(code)];
+  if(!cod){ beep(false); msg($("smsg"), `Código <b>${esc(code)}</b> no encontrado. Revisar la etiqueta o pedir el alta a un administrador.`, "err"); return; }
+  const i = IT[cod];
+  const l = sumarALista(cod, 1, i.ub, tipo, "");
+  beep(true);
+  msg($("smsg"), `${tipo==="SALIDA"?"Salida":"Entrada"}: <b>${esc(cod)}</b> · ${esc(i.ins)} → ${fmt(l.cant)} ${esc(plural(i.ub, l.cant))} en la lista`, "ok");
+}
+$("scan").onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); procesarScan($("scan").value); $("scan").value=""; } };
+
+/* Si la lectora "tipea" con el cursor en otro campo, se detecta la ráfaga rápida + Enter
+   y se la toma como lectura (solo en la pestaña Cargar). */
+let kb = [];
+document.addEventListener("keydown", e => {
+  if($("carga").hidden || $("trabajo").hidden || e.target === $("scan")) return;
+  const now = performance.now();
+  if(e.key.length === 1 && !e.ctrlKey && !e.altKey){
+    if(kb.length && now - kb[kb.length-1].t > 60) kb = [];
+    kb.push({c:e.key, t:now}); return;
+  }
+  if(e.key === "Enter"){
+    const rafaga = kb.length >= 3 && now - kb[kb.length-1].t < 100;
+    const code = kb.map(x => x.c).join(""); kb = [];
+    if(!rafaga) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const el = e.target;
+    if(el && typeof el.value === "string" && el.value.endsWith(code)){ el.value = el.value.slice(0, -code.length); el.dispatchEvent(new Event("input")); }
+    procesarScan(code);
+  }
+}, true);
+
+/* ---- búsqueda manual ---- */
+function stockTxt(i){
+  if(i.act===null) return `<b>Stock: s/d</b> <span class=mut>(${esc(i.estado)})</span>`;
+  let t = `<b>Stock: ${fmt(i.act)} ${esc(i.ub)}</b>`;
+  const e = enEmp(i); if(e) t += ` <span class=mut>= ${esc(e)}</span>`;
+  if(i.estado!=="OK") t += ` · <span class=mut>* ${esc(i.estado)}</span>`;
+  return t;
+}
+function buscar(){
+  const q = $("buscar").value.trim();
+  sel = null; $("card").innerHTML=""; $("uni").innerHTML="";
+  if(!q){ $("sug").innerHTML=""; return; }
+  const res = D.items.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec, q)).slice(0,10);
+  sugIdx = 0;
+  $("sug").innerHTML = res.length ? res.map((i,k) => `<div data-c="${esc(i.cod)}" class="${k===0?"act":""}"><span><b>${esc(i.cod)}</b> · ${esc(i.ins)}</span><small>${i.act===null?"s/d":fmt(i.act)+" "+esc(i.ub)}</small></div>`).join("") : `<div class=mut>Sin resultados. Si es un insumo nuevo, pedir el alta a un administrador.</div>`;
+  $("sug").querySelectorAll("div[data-c]").forEach(d => d.onmousedown = e => { e.preventDefault(); elegir(d.dataset.c); });
+}
+function elegir(cod){
+  const i = IT[cod]; if(!i) return;
+  sel = cod; $("buscar").value = `${i.cod} · ${i.ins}`; $("sug").innerHTML = "";
+  $("uni").innerHTML = uniOpts(i);
+  uniDefault(i);
+  showCard(cod); $("cant").focus(); checkAviso();
+}
+function showCard(cod){ const i = IT[cod]; $("card").innerHTML = `${stockTxt(i)}<br><span class=mut>${esc(i.sec||"–")} · Ubic. ${esc(i.ubi||"–")}</span>`; }
+$("buscar").oninput = buscar;
+$("buscar").onkeydown = e => {
+  const ds = [...$("sug").querySelectorAll("div[data-c]")];
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ if(!ds.length) return; e.preventDefault(); sugIdx = (sugIdx + (e.key==="ArrowDown"?1:-1) + ds.length) % ds.length; ds.forEach((d,k)=>d.classList.toggle("act",k===sugIdx)); }
+  if(e.key==="Enter"){ e.preventDefault(); if(ds[sugIdx]) elegir(ds[sugIdx].dataset.c); }
+};
+$("buscar").onblur = () => setTimeout(()=>{ if(document.activeElement !== $("buscar")) $("sug").innerHTML=""; }, 150);
+
+function uniOpts(i){
+  let o = `<option value="${esc(i.ub)}">${esc(i.ub)} (suelta)</option>`;
+  [[i.emp,i.fac],[i.emp2,i.fac2]].forEach(([e,f]) => { if(e) o += `<option value="${esc(e)}">${esc(e)}${f?` (x ${fmt(f)} ${esc(plural(i.ub,f))})`:" (* sin cantidad definida)"}</option>`; });
+  return o;
+}
+function cantBase(cod, cant, uni){
+  const i = IT[cod];
+  if(i.emp && uni===i.emp) return i.fac ? cant*i.fac : null;
+  if(i.emp2 && uni===i.emp2) return i.fac2 ? cant*i.fac2 : null;
+  return cant;
+}
+function excede(cod){   // salida total en la lista > stock registrado
+  const i = IT[cod]; if(!i || i.act===null) return false;
+  const tot = lista.filter(l => l.cod===cod).reduce((s,l) => s + (cantBase(l.cod,l.cant,l.unidad) ?? 0) * (l.tipo==="SALIDA"?1:-1), 0);
+  return tot > i.act;
+}
+function checkAviso(){
+  const a = $("aviso"); a.innerHTML=""; a.className="msg warn";
+  if(!sel || tipo!=="SALIDA") return;
+  const i = IT[sel], c = parseFloat(($("cant").value||"").replace(",","."));
+  if(!(c>0) || i.act===null) return;
+  const b = cantBase(sel, c, $("uni").value); if(b===null) return;
+  const enLista = lista.filter(l => l.cod===sel).reduce((s,l)=> s + (cantBase(l.cod,l.cant,l.unidad) ?? 0) * (l.tipo==="SALIDA"?1:-1), 0);
+  if(b + enLista > i.act) a.innerHTML = `Atención: la salida supera el stock registrado (${fmt(i.act)} ${esc(i.ub)}). Se puede cargar igual.`;
+}
+$("cant").oninput = checkAviso; $("uni").onchange = checkAviso;
+["cant","obs"].forEach(id => $(id).onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); agregar(); } });
+
+function agregar(){
+  const errs = [];
+  if(!sel) errs.push("Elegir un insumo de la lista.");
+  const c = parseFloat(($("cant").value||"").replace(",","."));
+  if(!(c>0)) errs.push("Cantidad inválida.");
+  if(errs.length){ msg($("smsg"), errs.join(" "), "err"); return; }
+  sumarALista(sel, c, $("uni").value, tipo, $("obs").value.trim());
+  msg($("smsg"), "");
+  $("buscar").value=""; $("cant").value=""; $("obs").value=""; $("card").innerHTML=""; $("uni").innerHTML=""; $("aviso").innerHTML=""; sel=null;
+  $("scan").focus();
+}
+$("agregar").onclick = agregar;
+
+/* ---- lista editable ---- */
+function renderLista(flash){
+  $("nl").textContent = lista.length;
+  $("cargar").disabled = !lista.length;
+  let hayExc = false;
+  $("lista").innerHTML = lista.length ? lista.map((l,k) => {
+    const i = IT[l.cod]; if(!i) return "";
+    const exc = l.tipo==="SALIDA" && excede(l.cod); if(exc) hayExc = true;
+    return `<tr data-k="${k}" class="${k===flash?"flash":""}">
+     <td><select data-f="tipo"><option value="SALIDA" ${l.tipo==="SALIDA"?"selected":""}>S</option><option value="ENTRADA" ${l.tipo==="ENTRADA"?"selected":""}>E</option></select></td>
+     <td>${esc(l.cod)}</td><td>${esc(l.ins)}</td>
+     <td style="white-space:nowrap"><button class="btn sm" data-d="-1" type=button>−</button>
+       <input data-f="cant" value="${l.cant}" inputmode="decimal" class="qty">
+       <button class="btn sm" data-d="1" type=button>+</button>${exc?' <b title="Supera el stock registrado">*</b>':""}</td>
+     <td><select data-f="unidad">${uniOpts(i)}</select></td>
+     <td><input data-f="obs" value="${esc(l.obs)}" placeholder="—"></td>
+     <td class=c><button class="btn sm" data-x type="button" title="Quitar">✕</button></td></tr>`;
+  }).join("") : `<tr><td colspan=7 class=mut>Vacía. Escanear o agregar a mano.</td></tr>`;
+  $("lnota").textContent = hayExc ? "* La salida supera el stock registrado. Se puede cargar igual." : "";
+  $("lista").querySelectorAll("tr[data-k]").forEach(tr => {
+    const k = +tr.dataset.k, l = lista[k];
+    tr.querySelector("[data-f=unidad]").value = l.unidad;
+    const guardar = () => { store.set("lista", lista); };
+    tr.querySelector("[data-f=tipo]").onchange = e => { l.tipo = e.target.value; guardar(); renderLista(); };
+    tr.querySelector("[data-f=unidad]").onchange = e => { l.unidad = e.target.value; guardar(); renderLista(); };
+    tr.querySelector("[data-f=obs]").oninput = e => { l.obs = e.target.value; guardar(); };
+    const q = tr.querySelector("[data-f=cant]");
+    q.onchange = () => { const v = parseFloat(q.value.replace(",",".")); if(v>0){ l.cant = v; guardar(); } renderLista(); };
+    tr.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const v = Math.round((l.cant + (+b.dataset.d))*1000)/1000; if(v>0){ l.cant = v; guardar(); renderLista(); } });
+    tr.querySelector("[data-x]").onclick = () => { lista.splice(k,1); guardar(); renderLista(); };
+  });
+}
+$("vaciar").onclick = () => { if(lista.length && confirm("¿Vaciar la lista sin cargar?")){ lista=[]; store.set("lista",lista); renderLista(); msg($("smsg"),""); } };
+
+$("cargar").onclick = async () => {
+  if(!USR){ salir("vencida"); return; }
+  $("cargar").disabled = true; msg($("msg"), "Cargando…");
+  const r = await api("/api/movimientos", {lineas: lista.map(l => ({tipo:l.tipo==="ENTRADA"?"E":"S", cod:l.cod, cant:String(l.cant), unidad:l.unidad, obs:l.obs}))});
+  if(r.ok){
+    msg($("msg"), r.d.pendiente ? `${r.d.ok} movimiento(s) guardados en espera (el Excel está abierto). Se pasan solos al Excel cuando se cierre.` : `Listo: ${r.d.ok} movimiento(s) cargados a nombre de ${esc(USR.nombre)}${USR.nombre.endsWith(".")?"":"."}`, r.d.pendiente ? "warn" : "ok");
+    lista = []; store.set("lista", lista); msg($("smsg"), ""); await cargarDatos(); $("scan").focus();
+  }else if(r.status === 401){
+    salir("vencida");
+  }else{
+    msg($("msg"), esc(r.d.error || "Error") + (r.d.detalle ? "<br>" + r.d.detalle.map(esc).join("<br>").replace(/Línea (\d+)/g, "Renglón $1 de la lista") : ""), "err");
+    $("cargar").disabled = false;
+  }
+};
+
+/* ---------------- SESIÓN DE PERSONA (legajo + contraseña) ---------------- */
+let USR = (() => { try{ return JSON.parse(sessionStorage.getItem("invbs_usr") || "null"); }catch(e){ return null; } })();
+let INACT = 300, INACT_A = 120, ultimaAct = Date.now(), ultimoPing = 0, ultimoPingA = 0;
+function guardarUsr(){ try{ USR ? sessionStorage.setItem("invbs_usr", JSON.stringify(USR)) : sessionStorage.removeItem("invbs_usr"); }catch(e){} }
+function mostrarCarga(){
+  $("ingreso").hidden = !!USR;
+  $("cambio").hidden = !(USR && USR.cambiar) && $("cambio").dataset.voluntario !== "1";
+  $("trabajo").hidden = !USR || USR.cambiar || $("cambio").dataset.voluntario === "1";
+  if(USR){ $("snombre").textContent = USR.nombre; $("slegajo").textContent = USR.legajo; }
+  if(USR && USR.cambiar){
+    $("ctxt").textContent = "Es tu primer ingreso o te resetearon la contraseña: elegí una nueva para continuar.";
+    $("lactual").hidden = true; $("ccancelar").hidden = true;
+  }
+  if(!USR) setTimeout(() => $("ilegajo").focus(), 50);
+}
+async function ingresar(){
+  const r = await api("/api/ingresar", {legajo:$("ilegajo").value.trim(), clave:$("iclave").value});
+  if(!r.ok){ msg($("imsg"), esc(r.d.error), "err"); $("iclave").value=""; $("iclave").focus(); return; }
+  USR = {token:r.d.token, nombre:r.d.nombre, legajo:r.d.legajo, cambiar:r.d.cambiar};
+  INACT = r.d.inactividad || 300; guardarUsr();
+  $("ilegajo").value = ""; $("iclave").value = ""; msg($("imsg"), "");
+  lista = []; store.set("lista", lista); renderLista();
+  ultimaAct = Date.now(); mostrarCarga(); focoScan();
+}
+async function salir(motivo){
+  if(USR) await api("/api/salir", {});
+  USR = null; guardarUsr();
+  lista = []; store.set("lista", lista); renderLista();
+  msg($("smsg"), ""); msg($("msg"), "");
+  $("cambio").dataset.voluntario = "";
+  mostrarCarga();
+  msg($("imsg"), motivo === "inactividad" ? `Sesión cerrada por inactividad (${INACT >= 60 ? Math.round(INACT/60) + " min" : INACT + " s"}). La lista sin cargar se descartó.`
+               : motivo === "vencida" ? "La sesión se cerró. Volver a ingresar." : "", "warn");
+}
+$("ientrar").onclick = ingresar;
+$("ilegajo").onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); $("iclave").focus(); } };
+$("iclave").onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); ingresar(); } };
+$("ssalir").onclick = () => salir("");
+$("smiclave").onclick = () => {
+  $("cambio").dataset.voluntario = "1"; $("ctxt").textContent = "";
+  $("lactual").hidden = false; $("ccancelar").hidden = false; msg($("cmsg"), "");
+  mostrarCarga(); $("cactual").focus();
+};
+$("ccancelar").onclick = () => { $("cambio").dataset.voluntario = ""; ["cactual","cnueva","cnueva2"].forEach(i => $(i).value=""); mostrarCarga(); };
+$("cguardar").onclick = async () => {
+  if($("cnueva").value !== $("cnueva2").value){ msg($("cmsg"), "Las contraseñas nuevas no coinciden.", "err"); return; }
+  const r = await api("/api/mi_clave", {actual:$("cactual").value, nueva:$("cnueva").value});
+  if(r.status === 401){ salir("vencida"); return; }
+  if(!r.ok){ msg($("cmsg"), esc(r.d.error), "err"); return; }
+  ["cactual","cnueva","cnueva2"].forEach(i => $(i).value="");
+  USR.cambiar = false; guardarUsr(); $("cambio").dataset.voluntario = "";
+  mostrarCarga(); msg($("smsg"), "Contraseña cambiada.", "ok"); focoScan();
+};
+["cnueva2"].forEach(id => $(id).onkeydown = e => { if(e.key==="Enter") $("cguardar").click(); });
+
+/* actividad e inactividad (5 min) para la sesión de persona y la de administración */
+["keydown","mousedown","touchstart","wheel"].forEach(ev => document.addEventListener(ev, () => {
+  ultimaAct = Date.now();
+  if(USR && Date.now() - ultimoPing > 60000){ ultimoPing = Date.now(); api("/api/sesion", {}).then(r => { if(r.status === 401) salir("vencida"); }); }
+  if(sess.get() && Date.now() - ultimoPingA > 30000){ ultimoPingA = Date.now(); api("/api/admin/ping", {}); }
+}, true));
+setInterval(() => {
+  const resta = INACT - (Date.now() - ultimaAct) / 1000;
+  if(USR){
+    $("sresta").textContent = resta < 60 && resta > 0 ? `· se cierra en ${Math.ceil(resta)} s` : "";
+    if(resta <= 0) salir("inactividad");
+  }
+  const restaA = INACT_A - (Date.now() - ultimaAct) / 1000;
+  if(sess.get()){
+    $("aresta").textContent = restaA < 30 && restaA > 0 ? `Se cierra en ${Math.ceil(restaA)} s` : "";
+    if(restaA <= 0){ cerrarClave(); sess.set(""); showLogin(); msg($("lmsg"), `Sesión de Administración cerrada por inactividad (${INACT_A >= 60 ? Math.round(INACT_A/60) + " min" : INACT_A + " s"}).`, "warn"); }
+  }
+}, 1000);
+
+/* ---------------- ADMIN ---------------- */
+let M = [], V = [];
+function showLogin(){ $("login").hidden=false; $("adm").hidden=true; }
+async function enterAdmin(){
+  $("login").hidden=true; $("adm").hidden=false;
+  $("dl").href = "/excel?token=" + encodeURIComponent(sess.get());
+  if(D.clave_inicial) msg($("amsg"), "La contraseña sigue siendo la inicial: cambiarla en Cuenta / Excel.", "warn");
+  await loadMaestro();
+}
+$("entrar").onclick = async () => {
+  const r = await api("/api/login", {password:$("pw").value});
+  if(r.ok){ sess.set(r.d.token); INACT_A = r.d.inactividad || 120; ultimaAct = Date.now(); $("pw").value=""; msg($("lmsg"),""); D.clave_inicial = r.d.clave_inicial; enterAdmin(); }
+  else msg($("lmsg"), esc(r.d.error), "err");
+};
+$("pw").onkeydown = e => { if(e.key==="Enter") $("entrar").click(); };
+$("salir").onclick = async () => { cerrarClave(); await api("/api/admin/salir", {}); sess.set(""); showLogin(); };
+document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".subnav button[data-sub]").forEach(x => x.classList.toggle("on", x===b));
+  ["maestro","movs","pers","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
+  msg($("amsg"), "");
+  if(b.dataset.sub==="maestro") loadMaestro();
+  if(b.dataset.sub==="movs") loadMovs();
+  if(b.dataset.sub==="pers") loadPers();
+});
+
+const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","w"],["bar",""]];
+async function loadMaestro(){
+  const r = await api("/api/admin/maestro"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
+  M = r.d.items; renderMaestro();
+}
+function cell(k, v, cls){ return `<td><input data-f="${k}" class="${cls==="w"?"w":""}" value="${esc(v??"")}" ${cls==="n"?'inputmode="decimal" style="text-align:right;min-width:70px"':""}></td>`; }
+function renderMaestro(){
+  const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
+  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c)).join("") + `<td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
+  h += rows.map(i => `<tr data-c="${esc(i.cod)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
+       `<td class=n>${i.act===null?"*":fmt(i.act)}</td><td class=n>${i.nmov}</td><td style="white-space:nowrap"><button class="btn sm" data-save disabled type="button">Guardar</button> ${i.nmov?"":`<button class="btn sm" data-del type="button">Borrar</button>`}</td></tr>`).join("");
+  $("mt").innerHTML = h;
+  $("mt").querySelectorAll("tr[data-c] input").forEach(inp => inp.oninput = () => { const tr = inp.closest("tr"); tr.classList.add("dirty"); tr.querySelector("[data-save]").disabled = false; });
+  $("mt").querySelectorAll("[data-save]").forEach(b => b.onclick = async () => {
+    const tr = b.closest("tr"), cod = tr.dataset.c, campos = {};
+    tr.querySelectorAll("input[data-f]").forEach(x => campos[x.dataset.f] = x.value.trim());
+    const r = await api("/api/admin/maestro", {accion:"editar", cod, campos});
+    msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+    if(r.ok){ await loadMaestro(); cargarDatos(); }
+  });
+  $("mt").querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    const cod = b.closest("tr").dataset.c;
+    if(!confirm(`¿Borrar ${cod} del maestro?`)) return;
+    const r = await api("/api/admin/maestro", {accion:"borrar", cod});
+    msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+    if(r.ok){ await loadMaestro(); cargarDatos(); }
+  });
+  $("mt").querySelector("[data-new]").onclick = async e => {
+    const tr = e.target.closest("tr"), campos = {}; let cod = "";
+    tr.querySelectorAll("input[data-f]").forEach(x => { if(x.dataset.f==="cod") cod = x.value.trim(); else campos[x.dataset.f] = x.value.trim(); });
+    const r = await api("/api/admin/maestro", {accion:"nuevo", cod, campos});
+    msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+    if(r.ok){ await loadMaestro(); cargarDatos(); }
+  };
+}
+$("mf").oninput = renderMaestro;
+
+async function loadMovs(){
+  const r = await api("/api/admin/movimientos"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
+  V = r.d.movs; renderMovs();
+}
+function renderMovs(){
+  const rows = V.filter(m => hasAll([m.fecha,m.cod,m.ins,m.persona,m.origen,m.obs].join(" "), $("vf").value)).slice(0,300);
+  $("vt").innerHTML = rows.map(m => `<tr><td class=c>${m.fila??"pend."}</td><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td><td class=mut>${esc(m.origen)}</td><td>${esc(m.obs)}</td><td style="white-space:nowrap">${m.fila?`<button class="btn sm" data-e="${m.fila}" type="button">Editar</button> <button class="btn sm" data-f="${m.fila}" data-c="${esc(m.cod)}" data-q="${m.cant}" type="button">Anular</button>`:""}</td></tr>`).join("") || `<tr><td colspan=11 class=mut>Sin resultados</td></tr>`;
+  $("vt").querySelectorAll("button[data-e]").forEach(b => b.onclick = () => editarMov(b.closest("tr"), V.find(m => m.fila === +b.dataset.e)));
+  $("vt").querySelectorAll("button[data-f]").forEach(b => b.onclick = async () => {
+    const motivo = prompt(`Anular fila ${b.dataset.f} (${b.dataset.c}). Motivo:`);
+    if(!motivo || !motivo.trim()) return;
+    const r = await api("/api/admin/anular", {fila:+b.dataset.f, cod:b.dataset.c, cant:+b.dataset.q, motivo:motivo.trim()});
+    msg($("amsg"), r.ok ? "Movimiento anulado (copiado a la hoja Anulados)." : esc(r.d.error), r.ok ? "ok" : "err");
+    await loadMovs(); cargarDatos();
+  });
+}
+$("vf").oninput = renderMovs;
+
+function editarMov(tr, m){
+  const i = IT[m.cod]; if(!i){ msg($("amsg"), "Actualizá la pestaña Cargar e intentá de nuevo.", "err"); return; }
+  tr.classList.add("dirty");
+  tr.innerHTML = `<td class=c>${m.fila}</td><td>${m.fecha}</td>
+   <td><select data-x=tipo style="margin:0;padding:4px"><option value=S ${m.tipo==="SALIDA"?"selected":""}>S</option><option value=E ${m.tipo==="ENTRADA"?"selected":""}>E</option></select></td>
+   <td>${esc(m.cod)}</td><td>${esc(m.ins)}</td>
+   <td><input data-x=cant value="${m.cant}" inputmode="decimal" style="margin:0;padding:4px;width:70px;text-align:right"></td>
+   <td><select data-x=unidad style="margin:0;padding:4px">${uniOpts(i)}</select></td>
+   <td><input data-x=persona value="${esc(m.persona)}" style="margin:0;padding:4px"></td>
+   <td class=mut>${esc(m.origen)}</td><td><input data-x=obs value="${esc(m.obs)}" style="margin:0;padding:4px"></td>
+   <td style="white-space:nowrap"><button class="btn sm pri" data-ok type=button>Guardar</button> <button class="btn sm" data-no type=button>Cancelar</button></td>`;
+  const u = tr.querySelector("[data-x=unidad]"); u.value = [...u.options].some(o => o.value===m.unidad) ? m.unidad : i.ub;
+  tr.querySelector("[data-no]").onclick = renderMovs;
+  tr.querySelector("[data-ok]").onclick = async () => {
+    const g = k => tr.querySelector(`[data-x=${k}]`).value.trim();
+    const r = await api("/api/admin/editar_mov", {fila:m.fila, cod:m.cod, cant_orig:m.cant,
+      campos:{fecha:m.fecha, tipo:g("tipo"), cant:g("cant"), unidad:g("unidad"), persona:g("persona"), obs:g("obs")}});
+    msg($("amsg"), r.ok ? `Fila ${m.fila} corregida.` : esc(r.d.error), r.ok ? "ok" : "err");
+    if(r.ok){ await loadMovs(); cargarDatos(); }
+  };
+}
+
+async function loadPers(){
+  const r = await api("/api/admin/personas"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
+  const est = p => !p.tiene_clave ? "<b>* Falta</b>" : "Definida";
+  let h = `<tr><td><input data-f="legajo" placeholder="Legajo" style="min-width:80px"></td><td><input data-f="nombre" class="w" placeholder="Nombre y apellido"></td>
+    <td><input data-f="obs" placeholder="—"></td><td></td><td></td><td></td>
+    <td><button class="btn sm pri" data-nuevo type=button>Agregar</button></td></tr>`;
+  h += r.d.personas.map(p => `<tr data-fila="${p.fila}" data-n="${esc(p.nombre)}">
+    <td><input data-f="legajo" value="${esc(p.legajo)}" style="min-width:80px"></td>
+    <td><input data-f="nombre" class="w" value="${esc(p.nombre)}"></td>
+    <td><input data-f="obs" value="${esc(p.obs)}"></td>
+    <td style="white-space:nowrap">${est(p)} <button class="btn sm" data-a="clave" type=button>${p.tiene_clave?"Cambiar":"Definir contraseña"}</button></td>
+    <td class=c>${p.activo?"Sí":"No"} <button class="btn sm" data-a="${p.activo?"desactivar":"activar"}" type=button>${p.activo?"Desactivar":"Activar"}</button></td>
+    <td class=n>${p.usos}</td>
+    <td style="white-space:nowrap"><button class="btn sm" data-a="editar" disabled type=button>Guardar</button>
+    ${p.usos?"":`<button class="btn sm" data-a="borrar" type=button>Borrar</button>`}</td></tr>`).join("");
+  $("pt").innerHTML = h;
+  $("pt").querySelectorAll("tr[data-fila] input").forEach(i => i.oninput = () => { const tr = i.closest("tr"); tr.classList.add("dirty"); tr.querySelector("[data-a=editar]").disabled = false; });
+  $("pt").querySelector("[data-nuevo]").onclick = e => {
+    const tr = e.target.closest("tr"), g = k => tr.querySelector(`[data-f=${k}]`).value.trim();
+    persona({accion:"nuevo", legajo:g("legajo"), nombre:g("nombre"), obs:g("obs")}).then(r => {
+      if(r && r.ok && r.d.fila) abrirClave({fila:r.d.fila, nombre_actual:g("nombre"), legajo:g("legajo"), nombre:g("nombre"), obs:g("obs")});
+    });
+  };
+  $("pt").querySelectorAll("tr[data-fila] button[data-a]").forEach(b => b.onclick = () => {
+    const tr = b.closest("tr"), g = k => tr.querySelector(`[data-f=${k}]`).value.trim();
+    const base = {accion:b.dataset.a, fila:+tr.dataset.fila, nombre_actual:tr.dataset.n, legajo:g("legajo"), nombre:g("nombre"), obs:g("obs")};
+    if(b.dataset.a === "clave"){ abrirClave(base); return; }
+    if(b.dataset.a === "borrar" && !confirm(`¿Borrar a ${tr.dataset.n}?`)) return;
+    persona(base);
+  });
+}
+async function persona(datos){
+  const r = await api("/api/admin/personas", datos);
+  msg($("amsg"), esc(r.ok ? r.d.msg : r.d.error), r.ok ? "ok" : "err");
+  if(r.ok) await loadPers();
+  return r;
+}
+/* la persona escribe su contraseña; el administrador no la ve */
+let PCLAVE = null;
+function cerrarClave(){ $("pc1").value = ""; $("pc2").value = ""; $("ppanel").hidden = true; PCLAVE = null; }
+function abrirClave(base){
+  PCLAVE = base; $("ptitulo").textContent = `Contraseña de ${base.nombre_actual}`;
+  $("pc1").value = ""; $("pc2").value = ""; $("ppanel").hidden = false; $("pc1").focus();
+}
+$("pcno").onclick = cerrarClave;
+$("pc2").onkeydown = e => { if(e.key === "Enter") $("pcok").click(); };
+$("pcok").onclick = async () => {
+  if(!PCLAVE) return;
+  if($("pc1").value !== $("pc2").value){ msg($("amsg"), "Las contraseñas no coinciden. Volver a escribirlas.", "err"); $("pc1").value = ""; $("pc2").value = ""; $("pc1").focus(); return; }
+  const datos = Object.assign({}, PCLAVE, {accion:"clave", clave:$("pc1").value});
+  $("pc1").value = ""; $("pc2").value = "";
+  const r = await persona(datos);
+  if(r.ok) cerrarClave(); else $("pc1").focus();
+};
+
+$("cambiar").onclick = async () => {
+  if($("pn").value !== $("pn2").value){ msg($("amsg"), "Las contraseñas nuevas no coinciden.", "err"); return; }
+  const r = await api("/api/admin/password", {actual:$("pa").value, nueva:$("pn").value});
+  msg($("amsg"), r.ok ? "Contraseña cambiada." : esc(r.d.error), r.ok ? "ok" : "err");
+  if(r.ok){ $("pa").value=$("pn").value=$("pn2").value=""; D.clave_inicial=false; }
+};
+
+setTipo(tipo); mostrarCarga(); cargarDatos();   // la lista se dibuja cuando llegan los datos
+if(USR) api("/api/sesion", {}).then(r => { if(r.status === 401) salir("vencida"); });
+</script>
+</body>
+</html>

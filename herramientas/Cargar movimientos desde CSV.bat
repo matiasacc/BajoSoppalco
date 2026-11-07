@@ -1,0 +1,10 @@
+@echo off
+REM Carga herramientas\movimientos.csv al Excel (carga alternativa sin navegador).
+REM Formato: fecha;tipo;codigo;cantidad;unidad;persona;obs   (tipo E o S)
+cd /d "%~dp0..\sistema"
+title Inventario Bajo Soppalco - carga por CSV
+set "PY=python"
+if exist python_path.txt set /p PY=<python_path.txt
+"%PY%" cargar_movimientos.py
+echo.
+pause

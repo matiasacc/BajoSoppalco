@@ -1,0 +1,169 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Inventario Bajo Soppalco - Instrucciones</title>
+<style>
+@page{size:A4;margin:16mm 15mm 16mm 15mm}
+*{box-sizing:border-box}
+body{font:9.6pt/1.35 Arial,Helvetica,sans-serif;color:#1d1d1d;margin:0}
+h1{font-size:17pt;margin:0 0 2px}
+.sub{color:#555;margin:0 0 10px;font-size:9.5pt}
+h2{font-size:11pt;text-transform:uppercase;letter-spacing:.03em;border-bottom:1.5px solid #222;padding-bottom:2px;margin:16px 0 6px;break-after:avoid}
+h3{font-size:10pt;margin:10px 0 4px;break-after:avoid}
+table{border-collapse:collapse;width:100%;margin:4px 0 6px;break-inside:auto}
+tr{break-inside:avoid}
+th,td{border:1px solid #bbb;padding:3px 6px;text-align:left;vertical-align:top}
+th{background:#ececec;font-size:9pt}
+code{font:9pt Consolas,"Courier New",monospace;background:#f1f1f1;padding:0 3px}
+ol,ul{margin:3px 0 6px 18px;padding:0}
+li{margin:1px 0}
+.box{border:1px solid #222;padding:6px 9px;margin:6px 0;break-inside:avoid}
+.box .t{display:block;font-weight:bold;margin-bottom:2px}
+.k{white-space:nowrap}
+.small{font-size:8.5pt;color:#555}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pb{break-before:page}
+</style></head><body>
+
+<h1>Inventario Bajo Soppalco</h1>
+<p class="sub">Instalación, uso y mantenimiento · versión octubre 2026</p>
+
+<div class="box"><span class="t">Resumen</span>
+Una PC del depósito funciona como <b>servidor</b>: guarda el Excel y atiende a las demás.
+Para cargar, cada persona ingresa con su <b>legajo y contraseña</b>.
+Desde esa PC se usa el <b>icono del escritorio</b>; desde cualquier otra PC o celular de la red se entra con el
+<b>navegador</b> a la dirección <code>http://&lt;IP del servidor&gt;:8080</code>. No hay que instalar nada en las otras PCs.</div>
+
+<h2>1. Contenido de la carpeta</h2>
+<table>
+<tr><th style="width:38%">Archivo / carpeta</th><th>Para qué sirve</th></tr>
+<tr><td><code>LEEME - Instrucciones.pdf</code></td><td>Este documento.</td></tr>
+<tr><td><code>Instalar.bat</code></td><td>Instala en la PC servidor: icono del escritorio, arranque al iniciar sesión y librería de Excel. Doble clic.</td></tr>
+<tr><td><code>Desinstalar.bat</code></td><td>Quita lo anterior y detiene el servidor. No borra los datos.</td></tr>
+<tr><td><code>datos\Inventario_Bajo_Soppalco.xlsx</code></td><td>Base de datos: maestro, movimientos, stock, personas.</td></tr>
+<tr><td><code>datos\Informe_Inventario.html</code></td><td>Copia del informe de inventario (se actualiza sola).</td></tr>
+<tr><td><code>herramientas\Iniciar servidor con ventana.bat</code></td><td>Arranque manual con ventana (diagnóstico o uso sin instalar).</td></tr>
+<tr><td><code>herramientas\Cargar movimientos desde CSV.bat</code></td><td>Carga alternativa desde <code>movimientos.csv</code>.</td></tr>
+<tr><td><code>herramientas\Regla de firewall (IT).bat</code></td><td>Para IT, solo si otra PC no puede entrar: regla de firewall TCP 8080.</td></tr>
+<tr><td><code>sistema\</code></td><td>Archivos del programa. <b>No modificar.</b></td></tr>
+</table>
+<p class="small">Si no existe la planilla, el programa crea una vacía con la estructura completa.
+Se generan solos: <code>datos\pendientes.json</code> (movimientos en espera si el Excel estaba abierto),
+<code>herramientas\cargados\</code> (CSV ya cargados), <code>sistema\config_inventario.json</code> (contraseña),
+<code>sistema\python_path.txt</code>, <code>sistema\servidor.log</code> e <code>instalacion.log</code> (registros).</p>
+
+<h2>2. Requisitos (solo en la PC servidor)</h2>
+<ul>
+<li>Windows 10/11, PC encendida mientras se use el sistema.</li>
+<li><b>Python 3.8 o superior</b> (python.org o Microsoft Store). Si se instala desde python.org, marcar <i>“Add python.exe to PATH”</i>.</li>
+<li>Librería para Excel (openpyxl): la instala <code>Instalar.bat</code> automáticamente.</li>
+<li>Recomendado: <b>IP fija</b> para esta PC (así la dirección no cambia) y visto bueno de IT para el uso del puerto <b>8080</b> en la red interna.</li>
+<li>Configuración de energía: <i>Suspender: Nunca</i>.</li>
+</ul>
+
+<h2>3. Instalación</h2>
+<ol>
+<li>Copiar la carpeta <b>Inventario Bajo Soppalco</b> a <code>C:\</code> (ubicación definitiva; no Escritorio ni Descargas).</li>
+<li>Doble clic en <code>Instalar.bat</code>.
+Al terminar muestra las direcciones para ingresar y crea el icono <b>Inventario Bajo Soppalco</b> en el escritorio. Registro: <code>sistema\instalacion.log</code>.</li>
+<li>Abrir el icono → Administración → contraseña inicial <code>soppalco</code> → <b>cambiarla</b> en <i>Cuenta / Excel</i>.</li>
+<li>En Administración → <i>Personas</i>: dar de alta <b>legajo y nombre</b> de cada persona y tocar <b>Definir contraseña</b>: la escribe la propia persona.</li>
+<li>En Administración → <i>Maestro</i>: completar cantidades por empaque, stock mínimo y códigos de barras.</li>
+</ol>
+<p class="small">El servidor arranca solo al iniciar sesión en Windows (carpeta Inicio del usuario) y se reinicia solo si falla. No muestra ventanas. </p>
+
+<h2>4. Ingresar desde otra PC o celular</h2>
+<div class="two"><div>
+<h3>La dirección</h3>
+<p>Es <code>http://&lt;IP&gt;:8080</code>, donde IP es la dirección de la PC servidor en la red, por ejemplo <code>http://192.168.1.25:8080</code>.
+La muestra el instalador al terminar.</p>
+<h3>Cómo averiguar la IP</h3>
+<ol><li>En la PC servidor: tecla Windows → escribir <code>cmd</code> → Enter.</li>
+<li>Escribir <code>ipconfig</code> → Enter.</li>
+<li>Copiar el valor de <b>Dirección IPv4</b>.</li></ol>
+</div><div>
+<h3>En la otra PC</h3>
+<ol><li>Abrir Chrome o Edge y escribir la dirección.</li>
+<li>Guardarla en Favoritos (Ctrl + D).</li></ol>
+<p>Condiciones: misma red de la planta (no WiFi de invitados) y servidor encendido.
+En la PC servidor siempre funciona <code>http://localhost:8080</code>.</p>
+<p class="small">Si la IP del servidor cambia (sin IP fija), hay que pasar la nueva dirección.
+Si otra PC no logra entrar y la red es la correcta, el firewall de la PC servidor la está bloqueando:
+IT ejecuta <i>herramientas\Regla de firewall (IT).bat</i>.</p>
+</div></div>
+
+<h2>5. Uso diario: cargar movimientos</h2>
+<h3>Ingreso</h3>
+<ol>
+<li>Pestaña <b>Cargar</b> → <b>legajo</b> y <b>contraseña</b> → Ingresar.</li>
+<li>Para cambiar la propia contraseña: <b>Cambiar mi contraseña</b> (pide la actual).</li>
+<li>Al terminar: botón <b>Salir</b>. Sin actividad durante <b>5 minutos</b> la sesión se cierra sola y la lista sin cargar se descarta.</li>
+</ol>
+<h3>Con lectora</h3>
+<ol>
+<li>Elegir <b>SALIDA</b> o <b>ENTRADA</b>.</li>
+<li>Escanear la etiqueta de cada insumo. Cada lectura suma <b>1 unidad suelta</b>; si se repite el insumo, suma +1 en el mismo renglón.
+Pitido corto: OK. Dos pitidos graves: código no encontrado.</li>
+<li>Para corregir: en la lista se cambia la <b>cantidad</b> (− / +), la <b>unidad</b> (ej. <i>Caja</i>) o <b>E/S</b>, o se quita el renglón (✕).</li>
+<li><b>Cargar al inventario</b>. Queda registrado a nombre de quien ingresó.</li>
+</ol>
+<h3>A mano</h3>
+<p>En <i>Agregar a mano</i>: buscar el insumo por nombre o código, cantidad, unidad → <b>Agregar a la lista</b> → Cargar.</p>
+<table>
+<tr><th>Concepto</th><th>Funcionamiento</th></tr>
+<tr><td>Persona</td><td>La del legajo que ingresó. No se puede cargar a nombre de otro.</td></tr>
+<tr><td>Fecha y hora</td><td>Las pone el sistema. No se pueden modificar.</td></tr>
+<tr><td>Unidades</td><td>El stock se lleva en la unidad mínima (rollo, unidad...). Si se elige <i>Caja</i>, se multiplica por la cantidad por caja del Maestro.</td></tr>
+<tr><td>Seguridad</td><td>5 intentos de contraseña fallidos bloquean ese legajo 5 minutos. Las contraseñas se guardan cifradas.</td></tr>
+<tr><td>Excel abierto</td><td>Lo cargado queda en espera y pasa solo al Excel al cerrarlo.</td></tr>
+</table>
+
+<h2>6. Administración (con contraseña)</h2>
+<table>
+<tr><th style="width:22%">Sección</th><th>Qué se hace</th></tr>
+<tr><td>Maestro</td><td>Alta / edición de insumos: unidad base, empaques y cantidades, stock inicial, mínimo, <b>código de barras</b>. Borrar solo si no tiene movimientos.</td></tr>
+<tr><td>Movimientos</td><td><b>Editar</b> (E/S, cantidad, unidad, persona; queda anotado) o <b>Anular</b> (pasa a la hoja <i>Anulados</i> con motivo).</td></tr>
+<tr><td>Personas</td><td>Alta con legajo y nombre; <b>Definir contraseña</b> (la escribe la persona en campos ocultos, el administrador no la ve); desactivar o borrar.</td></tr>
+<tr><td>Cuenta / Excel</td><td>Descargar el Excel y cambiar la contraseña.</td></tr>
+</table>
+<p class="small">La sesión de Administración se cierra a los <b>2 minutos</b> sin actividad.
+Contraseña de una persona olvidada: Administración → Personas → <i>Cambiar</i>, y la persona escribe una nueva.
+Contraseña de Administración olvidada: borrar <code>sistema\config_inventario.json</code> → vuelve a ser <code>soppalco</code>.</p>
+
+<h2>7. Lectora y etiquetas</h2>
+<ul>
+<li>Lectora <b>2D inalámbrica</b> con base USB, modo <b>teclado (HID)</b>, que agregue <b>Enter</b> al final de cada lectura (configuración de fábrica habitual).</li>
+<li>Cada etiqueta lleva el <b>código del insumo</b> (ej. <code>CIN-07</code>) o el valor cargado en la columna <i>Código de barras</i> del Maestro.
+Formato recomendado: <b>Code 128</b> o QR.</li>
+<li>Si la lectora está en otra distribución de teclado y cambia los guiones por otros signos, el programa lo tolera: compara solo letras y números.</li>
+<li>Sin lectora se puede probar escribiendo el código en <i>Escanear código</i> y Enter.</li>
+</ul>
+
+<h2>8. Actualizar a una versión nueva</h2>
+<ol>
+<li>Ejecutar <code>Desinstalar.bat</code> (detiene el servidor).</li>
+<li>Reemplazar todo <b>excepto la carpeta</b> <code>datos</code>.</li>
+<li>Ejecutar <code>Instalar.bat</code>.</li>
+</ol>
+
+<h2>9. Desinstalar</h2>
+<ol>
+<li>Doble clic en <code>Desinstalar.bat</code>: detiene el servidor y quita el icono y el arranque automático.</li>
+<li>Si IT había creado la regla de firewall, la quitan ellos (comando dentro del archivo de IT).</li>
+<li>Guardar una copia de <code>datos\Inventario_Bajo_Soppalco.xlsx</code> y borrar la carpeta.</li>
+</ol>
+
+<h2>10. Problemas frecuentes</h2>
+<table>
+<tr><th style="width:36%">Síntoma</th><th>Solución</th></tr>
+<tr><td>Otra PC no abre la dirección</td><td>Verificar servidor encendido, IP correcta y misma red. Si sigue: firewall (punto 4).</td></tr>
+<tr><td>“Sin conexión con el servidor”</td><td>En la PC servidor abrir el icono (lo levanta) o reiniciar la PC.</td></tr>
+<tr><td>El icono no abre nada</td><td>Revisar <code>sistema\servidor.log</code>. Falta Python u openpyxl: ver Requisitos.</td></tr>
+<tr><td>“Movimientos en espera”</td><td>Alguien tiene el Excel abierto: cerrarlo.</td></tr>
+<tr><td>No deja borrar la carpeta</td><td>Ejecutar <code>Desinstalar.bat</code>.</td></tr>
+<tr><td>“Legajo o contraseña incorrectos” / sin contraseña</td><td>Verificar el legajo. Si la olvidó: un administrador abre <i>Cambiar</i> en Personas y la persona escribe una nueva.</td></tr>
+<tr><td>Código no encontrado al escanear</td><td>Verificar la etiqueta y el código del insumo en Maestro.</td></tr>
+<tr><td>La instalación muestra un error</td><td>Leer el mensaje y <code>sistema\instalacion.log</code>.</td></tr>
+<tr><td>Pantalla oscura o clara</td><td>Botón <b>Modo oscuro / Modo claro</b> arriba a la derecha (queda guardado en cada PC).</td></tr>
+</table>
+
+<div class="box"><span class="t">Copia de seguridad</span>
+Guardar periódicamente una copia de <code>Inventario_Bajo_Soppalco.xlsx</code> (Administración → Cuenta / Excel → Descargar, o copiar la carpeta <code>datos</code>), por ejemplo una vez por semana.</div>
+</body></html>
