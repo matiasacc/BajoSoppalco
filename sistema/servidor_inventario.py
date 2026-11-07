@@ -696,6 +696,9 @@ class H(BaseHTTPRequestHandler):
                                       {"Cache-Control": "max-age=86400"})
             return self._send(404, dict(error="sin icono"))
         if path == "/inventario":
+            if not token_ok(self._token()):
+                return self._send(401, "<p style='font:14px Arial'>Sesión de Administración cerrada. Volver a ingresar.</p>",
+                                  "text/html; charset=utf-8")
             try:
                 tema = parse_qs(urlparse(self.path).query).get("tema", [""])[0]
                 _, items, movs, st, _ = snapshot()

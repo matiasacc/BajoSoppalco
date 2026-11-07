@@ -76,7 +76,6 @@ tr.flash td{animation:fl 1s ease-out}
   <b>Inventario Bajo Soppalco</b>
   <nav>
     <button data-tab="carga" class="on">Cargar</button>
-    <button data-tab="inv">Inventario</button>
     <button data-tab="admin">Administración</button>
     <button id="tema" class="tema" type="button" title="Cambiar modo claro / oscuro">Modo oscuro</button>
   </nav>
@@ -156,11 +155,7 @@ tr.flash td{animation:fl 1s ease-out}
 </section>
 
 <!-- ============ INVENTARIO ============ -->
-<section id="inv" hidden>
-  <div class="bar"><button id="recInv" class="btn" type="button">Actualizar</button>
-  <a id="abrirInv" href="/inventario" target="_blank">Abrir en ventana nueva</a></div>
-  <iframe id="ifr" title="Inventario"></iframe>
-</section>
+
 
 <!-- ============ ADMIN ============ -->
 <section id="admin" hidden>
@@ -172,7 +167,8 @@ tr.flash td{animation:fl 1s ease-out}
  </div>
  <div id="adm" hidden>
    <div class="subnav">
-     <button class="btn on" data-sub="maestro" type="button">Maestro</button>
+     <button class="btn on" data-sub="inv" type="button">Inventario</button>
+     <button class="btn" data-sub="maestro" type="button">Maestro</button>
      <button class="btn" data-sub="movs" type="button">Movimientos</button>
      <button class="btn" data-sub="pers" type="button">Personas</button>
      <button class="btn" data-sub="cuenta" type="button">Cuenta / Excel</button>
@@ -212,6 +208,12 @@ tr.flash td{animation:fl 1s ease-out}
        <div class="bar"><button id="pcok" class="btn pri" type="button">Guardar</button><button id="pcno" class="btn" type="button">Cancelar</button></div>
      </div>
      <div class="tw"><table class="mt"><thead><tr><th>Legajo</th><th>Nombre</th><th>Observaciones</th><th>Contraseña</th><th>Activo</th><th>Mov.</th><th></th></tr></thead><tbody id="pt"></tbody></table></div>
+   </div>
+
+   <div id="s-inv">
+     <div class="bar"><button id="recInv" class="btn" type="button">Actualizar</button>
+     <a id="abrirInv" href="#">Abrir en ventana nueva</a></div>
+     <iframe id="ifr" title="Inventario"></iframe>
    </div>
 
    <div id="s-cuenta" hidden class="form">
@@ -270,16 +272,15 @@ function msg(el, text, cls){ el.className = "msg " + (cls||""); el.innerHTML = t
 /* ---------------- tabs ---------------- */
 document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("on", x===b));
-  ["carga","inv","admin"].forEach(t => $(t).hidden = (t !== b.dataset.tab));
-  if(b.dataset.tab==="inv") $("ifr").src = urlInv();
+  ["carga","admin"].forEach(t => $(t).hidden = (t !== b.dataset.tab));
   if(b.dataset.tab==="admin" && sess.get()) enterAdmin();
   if(b.dataset.tab==="carga") cargarDatos();
 });
-const urlInv = () => `/inventario?tema=${TEMA}&t=${Date.now()}`;
+const urlInv = () => `/inventario?tema=${TEMA}&token=${encodeURIComponent(sess.get())}&t=${Date.now()}`;
 $("recInv").onclick = () => $("ifr").src = urlInv();
 $("tema").onclick = () => {
   TEMA = TEMA === "oscuro" ? "claro" : "oscuro"; store.set("tema", TEMA); aplicarTema(TEMA);
-  if(!$("inv").hidden) $("ifr").src = urlInv();
+  if(!$("admin").hidden && !$("s-inv").hidden && sess.get()) $("ifr").src = urlInv();
 };
 $("abrirInv").onclick = e => { e.preventDefault(); window.open(urlInv(), "_blank"); };
 
@@ -566,8 +567,8 @@ function showLogin(){ $("login").hidden=false; $("adm").hidden=true; }
 async function enterAdmin(){
   $("login").hidden=true; $("adm").hidden=false;
   $("dl").href = "/excel?token=" + encodeURIComponent(sess.get());
+  document.querySelector(".subnav button[data-sub=inv]").click();      // abre en Inventario
   if(D.clave_inicial) msg($("amsg"), "La contraseña sigue siendo la inicial: cambiarla en Cuenta / Excel.", "warn");
-  await loadMaestro();
 }
 $("entrar").onclick = async () => {
   const r = await api("/api/login", {password:$("pw").value});
@@ -578,8 +579,9 @@ $("pw").onkeydown = e => { if(e.key==="Enter") $("entrar").click(); };
 $("salir").onclick = async () => { cerrarClave(); await api("/api/admin/salir", {}); sess.set(""); showLogin(); };
 document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = () => {
   document.querySelectorAll(".subnav button[data-sub]").forEach(x => x.classList.toggle("on", x===b));
-  ["maestro","movs","pers","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
+  ["inv","maestro","movs","pers","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
   msg($("amsg"), "");
+  if(b.dataset.sub==="inv") $("ifr").src = urlInv();
   if(b.dataset.sub==="maestro") loadMaestro();
   if(b.dataset.sub==="movs") loadMovs();
   if(b.dataset.sub==="pers") loadPers();

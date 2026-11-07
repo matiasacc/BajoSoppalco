@@ -651,20 +651,6 @@ def build_html(items, movs, st, path=None, tema=None):
         f"<td>{m['cod']}</td><td>{html.escape(items[m['cod']]['ins'])}</td><td class=n>{fmt(m['cant'])}</td>"
         f"<td class=c>{html.escape(m['unidad'])}</td><td>{html.escape(m['persona'])}</td></tr>" for m in ult)
 
-    # barras retiros por semana
-    mx = max(tot_sem) if tot_sem and max(tot_sem) else 1
-    W, H, pad = 640, 150, 28
-    bw = (W - pad) / max(nsem, 1)
-    bars = []
-    for i, v in enumerate(tot_sem):
-        bh = (v / mx) * (H - 40)
-        x = pad + i * bw
-        bars.append(f'<rect x="{x + 6:.1f}" y="{H - 20 - bh:.1f}" width="{bw - 12:.1f}" height="{bh:.1f}"/>'
-                    f'<text x="{x + bw / 2:.1f}" y="{H - 24 - bh:.1f}" class="lb">{v}</text>'
-                    f'<text x="{x + bw / 2:.1f}" y="{H - 6}" class="ax">{sem_lbl[i]:%d/%m}</text>')
-    chart = (f'<svg viewBox="0 0 {W} {H}" class="chart" role="img" aria-label="Retiros por semana">'
-             f'<line x1="{pad}" y1="{H - 20}" x2="{W}" y2="{H - 20}" class="base"/>{"".join(bars)}</svg>')
-
     doc = f"""<!doctype html>
 <html lang="es"{' data-theme="dark"' if tema == "oscuro" else ' data-theme="light"' if tema == "claro" else ""}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Inventario Bajo Soppalco</title>
@@ -701,9 +687,6 @@ td.n{{text-align:right;font-variant-numeric:tabular-nums}} td.c{{text-align:cent
 <div><b>{len(alert)}</b><span>insumos con observación (*)</span></div>
 </div>
 
-<h2>Retiros por semana</h2>
-{chart}
-<p class="note">Cantidad de retiros (renglones) por semana, semana que empieza el lunes indicado.</p>
 
 <h2>Consumo por insumo</h2>
 <div class="tw"><table><thead><tr><th>Código</th><th>Insumo</th><th>Unidad</th><th>Retiros</th><th>Total salido</th>
