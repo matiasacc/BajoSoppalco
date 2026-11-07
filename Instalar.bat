@@ -39,8 +39,11 @@ if errorlevel 1 (
 call :paso "      OK"
 
 call :paso "[3/4] Icono en el escritorio y arranque al iniciar sesion..."
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sistema\quitar_accesos.ps1" >> "%LOG%" 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sistema\crear_acceso_directo.ps1" -Sistema "%~dp0sistema" -Pythonw "%PYW%" >> "%LOG%" 2>&1
 if errorlevel 1 ( call :paso "      AVISO: no se pudieron crear los accesos (ver instalacion.log)." ) else ( call :paso "      OK" )
+REM refresca los iconos del escritorio
+ie4uinit.exe -show >nul 2>&1
 
 call :paso "[4/4] Iniciando el programa..."
 start "" "%PYW%" "%~dp0sistema\servicio.pyw"
