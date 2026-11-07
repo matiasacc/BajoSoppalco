@@ -72,6 +72,9 @@ iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);backgrou
 .subnav .btn.on{background:var(--ac);color:var(--acf)}
 .banner{background:var(--hd);border:1px solid var(--ln);padding:8px 10px;margin-bottom:12px;font-size:13px}
 .banner:empty{display:none}
+.filtros{align-items:flex-end}
+.filtros label{margin:0;font-size:12px}
+.filtros input,.filtros select{display:inline-block;width:auto;margin:2px 0 0;padding:6px}
 .modo{display:flex;gap:4px;align-items:center;margin-bottom:8px}
 .modo button{background:none;border:1px solid var(--ln);color:var(--fg);padding:5px 14px;font:inherit;cursor:pointer}
 .modo button.on{background:var(--ac);color:var(--acf);border-color:var(--ac)}
@@ -282,8 +285,17 @@ tr.flash td{animation:fl 1s ease-out}
    </div>
 
    <div id="s-inv">
-     <div class="bar"><button id="recInv" class="btn" type="button">Actualizar</button>
-     <a id="abrirInv" href="#">Abrir en ventana nueva</a></div>
+     <div class="bar filtros">
+       <label>Desde<input id="fdesde" type="date"></label>
+       <label>Hasta<input id="fhasta" type="date"></label>
+       <label>Sector<select id="fsector"><option value="">Todos</option></select></label>
+       <button id="fmes" class="btn sm" type="button">Este mes</button>
+       <button id="fmesant" class="btn sm" type="button">Mes anterior</button>
+       <button id="ftodo" class="btn sm" type="button">Todo</button>
+       <button id="recInv" class="btn pri" type="button">Aplicar</button>
+       <a id="abrirInv" href="#">Abrir en ventana nueva</a>
+       <a id="expInv" class="btn" href="#">Descargar Excel</a>
+     </div>
      <iframe id="ifr" title="Inventario"></iframe>
    </div>
 
@@ -366,13 +378,28 @@ document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () =>
   if(b.dataset.tab==="admin" && sess.get()) enterAdmin();
   if(b.dataset.tab==="carga") cargarDatos();
 });
-const urlInv = () => `/inventario?tema=${TEMA}&token=${encodeURIComponent(sess.get())}&t=${Date.now()}`;
+const filtrosInv = () => `desde=${$("fdesde").value}&hasta=${$("fhasta").value}&sector=${encodeURIComponent($("fsector").value)}`;
+const urlInv = () => `/inventario?${filtrosInv()}&tema=${TEMA}&token=${encodeURIComponent(sess.get())}&t=${Date.now()}`;
+const isoD = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
+function rangoMes(desplazamiento){
+  const h = new Date(), a = new Date(h.getFullYear(), h.getMonth() + desplazamiento, 1), b = new Date(h.getFullYear(), h.getMonth() + desplazamiento + 1, 0);
+  $("fdesde").value = isoD(a); $("fhasta").value = isoD(desplazamiento === 0 ? h : b); $("recInv").click();
+}
+function llenarSectores(){
+  const act = $("fsector").value, ss = [...new Set((D.items || []).map(i => i.sec).filter(Boolean))].sort();
+  $("fsector").innerHTML = `<option value="">Todos</option>` + ss.map(x => `<option ${x===act?"selected":""}>${esc(x)}</option>`).join("");
+}
 $("recInv").onclick = () => $("ifr").src = urlInv();
 $("tema").onclick = () => {
   TEMA = TEMA === "oscuro" ? "claro" : "oscuro"; store.set("tema", TEMA); aplicarTema(TEMA);
   if(!$("admin").hidden && !$("s-inv").hidden && sess.get()) $("ifr").src = urlInv();
 };
 $("abrirInv").onclick = e => { e.preventDefault(); window.open(urlInv(), "_blank"); };
+$("expInv").onclick = e => { e.preventDefault(); location.href = `/api/admin/exportar?${filtrosInv()}&token=${encodeURIComponent(sess.get())}`; };
+$("fmes").onclick = () => rangoMes(0);
+$("fmesant").onclick = () => rangoMes(-1);
+$("ftodo").onclick = () => { $("fdesde").value = ""; $("fhasta").value = ""; $("fsector").value = ""; $("recInv").click(); };
+$("fsector").onchange = () => $("recInv").click();
 
 /* ---------------- CARGA ---------------- */
 let D = {items:[], personas:[], ultimos:[]}, IT = {}, BAR = {}, tipo = store.get("tipo","SALIDA"), sel = null, lista = store.get("lista", []), sugIdx = 0;
@@ -729,7 +756,7 @@ document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = (
   document.querySelectorAll(".subnav button[data-sub]").forEach(x => x.classList.toggle("on", x===b));
   ["inv","maestro","movs","pers","etiq","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
   msg($("amsg"), "");
-  if(b.dataset.sub==="inv") $("ifr").src = urlInv();
+  if(b.dataset.sub==="inv"){ llenarSectores(); $("ifr").src = urlInv(); }
   if(b.dataset.sub==="maestro") loadMaestro();
   if(b.dataset.sub==="movs") loadMovs();
   if(b.dataset.sub==="pers") loadPers();

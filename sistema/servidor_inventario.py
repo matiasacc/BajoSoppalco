@@ -815,9 +815,12 @@ class H(BaseHTTPRequestHandler):
                 return self._send(401, "<p style='font:14px Arial'>Sesión de Administración cerrada. Volver a ingresar.</p>",
                                   "text/html; charset=utf-8")
             try:
-                tema = parse_qs(urlparse(self.path).query).get("tema", [""])[0]
+                q = parse_qs(urlparse(self.path).query)
+                g = lambda k: q.get(k, [""])[0]
                 _, items, movs, st, _ = snapshot()
-                return self._send(200, cm.build_html(items, movs, st, tema=tema), "text/html; charset=utf-8")
+                return self._send(200, cm.build_html(items, movs, st, tema=g("tema"), desde=g("desde") or None,
+                                                     hasta=g("hasta") or None, sector=g("sector") or None),
+                                  "text/html; charset=utf-8")
             except Exception as e:
                 return self._send(500, f"Error: {e}", "text/plain; charset=utf-8")
         if path == "/api/datos":
@@ -833,6 +836,14 @@ class H(BaseHTTPRequestHandler):
                 return self._guard(api_admin_personas_get)
             if path == "/api/admin/backups":
                 return self._guard(api_admin_backups_get)
+            if path == "/api/admin/exportar":
+                q = parse_qs(urlparse(self.path).query)
+                g = lambda k: q.get(k, [""])[0]
+                _, items, movs, st, _ = snapshot()
+                data = cm.exportar_xlsx(items, movs, st, g("desde") or None, g("hasta") or None, g("sector") or None)
+                nombre = "Informe_Inventario_" + (g("desde") or "inicio") + "_" + (g("hasta") or "hoy") + ".xlsx"
+                return self._send(200, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                  {"Content-Disposition": f'attachment; filename="{re.sub(r"[^A-Za-z0-9_.-]", "", nombre)}"'})
             if path == "/api/admin/backup_descargar":
                 nombre = parse_qs(urlparse(self.path).query).get("nombre", [""])[0]
                 p = os.path.join(BACKUPS, nombre)
