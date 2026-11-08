@@ -36,6 +36,10 @@ Instrucciones completas: [`LEEME - Instrucciones.pdf`](LEEME%20-%20Instrucciones
 
 ## Actualizar una instalación
 
+Con git: `Desinstalar.bat` → `git pull` → `Instalar.bat` (no toca `datos` ni la contraseña).
+
+Descargando el zip de nuevo:
 1. `Desinstalar.bat`.
-2. Reemplazar todo **excepto la carpeta `datos`**.
-3. `Instalar.bat`.
+2. Guardar aparte la carpeta `datos` y `sistema/config_inventario.json` (contraseña de Administración).
+3. Reemplazar la carpeta del programa por la nueva y volver a poner esos dos.
+4. `Instalar.bat`.

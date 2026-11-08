@@ -23,7 +23,7 @@ li{margin:1px 0}
 </style></head><body>
 
 <h1>Inventario Bajo Soppalco</h1>
-<p class="sub">Instalación, uso y mantenimiento · versión octubre 2026</p>
+<p class="sub">Instalación, uso y mantenimiento · versión noviembre 2026</p>
 
 <div class="box"><span class="t">Resumen</span>
 Una PC del depósito funciona como <b>servidor</b>: guarda el Excel y atiende a las demás.
@@ -39,7 +39,7 @@ Desde esa PC se usa el <b>icono del escritorio</b>; desde cualquier otra PC o ce
 <tr><td><code>Desinstalar.bat</code></td><td>Quita lo anterior y detiene el servidor. No borra los datos.</td></tr>
 <tr><td><code>datos\Inventario_Bajo_Soppalco.xlsx</code></td><td>Base de datos: maestro, movimientos, stock, personas.</td></tr>
 <tr><td><code>datos\Informe_Inventario.html</code></td><td>Copia del informe de inventario (se actualiza sola).</td></tr>
-<tr><td><code>herramientas\Iniciar servidor con ventana.bat</code></td><td>Arranque manual con ventana (diagnóstico o uso sin instalar).</td></tr>
+<tr><td><code>herramientas\Iniciar servidor con ventana.bat</code></td><td>Arranque manual con ventana, para diagnóstico (requiere haber ejecutado <code>Instalar.bat</code> una vez).</td></tr>
 <tr><td><code>herramientas\Cargar movimientos desde CSV.bat</code></td><td>Carga alternativa desde <code>movimientos.csv</code>.</td></tr>
 <tr><td><code>sistema\</code></td><td>Archivos del programa. <b>No modificar.</b></td></tr>
 </table>
@@ -59,7 +59,8 @@ Se generan solos: <code>datos\pendientes.json</code> (movimientos en espera si e
 
 <h2>3. Instalación</h2>
 <ol>
-<li>Copiar la carpeta <b>Inventario Bajo Soppalco</b> a <code>C:\</code> (ubicación definitiva; no Escritorio ni Descargas).</li>
+<li>Descargar el programa desde GitHub (<i>Code → Download ZIP</i>), descomprimirlo y dejar la carpeta en su ubicación definitiva, por ejemplo
+<code>C:\Inventario Bajo Soppalco</code>. No usar Escritorio, Descargas ni carpetas de OneDrive.</li>
 <li>Doble clic en <code>Instalar.bat</code>.
 Al terminar muestra las direcciones para ingresar y crea el icono <b>Inventario Bajo Soppalco</b> en el escritorio. Registro: <code>sistema\instalacion.log</code>.</li>
 <li>Abrir el icono → Administración → contraseña inicial <code>soppalco</code> → <b>cambiarla</b> en <i>Cuenta / Excel</i>.</li>
@@ -68,7 +69,7 @@ Al empezar, borrarlos desde Administración (Maestro y Personas).</li>
 <li>En Administración → <i>Personas</i>: dar de alta <b>legajo y nombre</b> de cada persona y tocar <b>Definir contraseña</b>: la escribe la propia persona.</li>
 <li>En Administración → <i>Maestro</i>: completar cantidades por empaque, stock mínimo y códigos de barras.</li>
 </ol>
-<p class="small">El servidor arranca solo al iniciar sesión en Windows (carpeta Inicio del usuario) . No muestra ventanas. Si alguna vez se cerrara, abrir el icono lo vuelve a levantar.</p>
+<p class="small">El servidor arranca solo al iniciar sesión en Windows (carpeta Inicio del usuario). No muestra ventanas. Si alguna vez se cerrara, abrir el icono lo vuelve a levantar.</p>
 
 <h2>4. Ingresar desde otra PC o celular</h2>
 <div class="two"><div>
@@ -152,10 +153,17 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 
 <h2>8. Actualizar a una versión nueva</h2>
 <ol>
-<li>Ejecutar <code>Desinstalar.bat</code> (detiene el servidor).</li>
-<li>Reemplazar todo <b>excepto la carpeta</b> <code>datos</code>.</li>
+<li>Ejecutar <code>Desinstalar.bat</code> (cierra el programa).</li>
+<li><b>Guardar aparte</b>, fuera de la carpeta del programa:
+ <ul>
+ <li>la carpeta <code>datos</code> completa (Excel, fotos y copias de seguridad);</li>
+ <li><code>sistema\config_inventario.json</code> (contraseña de Administración; si no se guarda, vuelve a ser <code>soppalco</code>).</li>
+ </ul></li>
+<li>Borrar la carpeta del programa, descargar la versión nueva de GitHub y descomprimirla en el mismo lugar.</li>
+<li>Volver a poner <code>datos</code> y <code>sistema\config_inventario.json</code> donde estaban (reemplazando los de la versión nueva).</li>
 <li>Ejecutar <code>Instalar.bat</code>.</li>
 </ol>
+<p class="small">Con <i>git</i> es más simple: <code>Desinstalar.bat</code> → <code>git pull</code> → <code>Instalar.bat</code>. <code>git pull</code> no toca <code>datos</code> ni la contraseña.</p>
 
 <h2>9. Desinstalar</h2>
 <ol>
@@ -175,6 +183,8 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 <tr><td>“Legajo o contraseña incorrectos” / sin contraseña</td><td>Verificar el legajo. Si la olvidó: un administrador abre <i>Cambiar</i> en Personas y la persona escribe una nueva.</td></tr>
 <tr><td>Código no encontrado al escanear</td><td>Verificar la etiqueta y el código del insumo en Maestro.</td></tr>
 <tr><td>La instalación muestra un error</td><td>Leer el mensaje y <code>sistema\instalacion.log</code>.</td></tr>
+<tr><td>“No se pudo obtener Python automáticamente”</td><td>Sin internet o python.org bloqueado: ver punto 2 (zip de Python al lado de <code>Instalar.bat</code>).</td></tr>
+<tr><td>“El Excel está dañado”</td><td>Restaurar una copia de <code>datos\backups</code> (ver <i>Copias de seguridad</i>). En una instalación nueva, borrarlo: el programa crea uno nuevo.</td></tr>
 <tr><td>Pantalla oscura o clara</td><td>Botón <b>Modo oscuro / Modo claro</b> arriba a la derecha (queda guardado en cada PC).</td></tr>
 </table>
 
