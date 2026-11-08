@@ -21,6 +21,7 @@ def log(txt):
 
 
 PORT = int(os.environ.get("INVENTARIO_PORT", "8080"))
+DETENER = os.path.join(BASE, "detener.flag")   # lo crea Desinstalar.bat: no reiniciar
 
 
 def puerto_ocupado():
@@ -33,7 +34,7 @@ def puerto_ocupado():
 
 
 def main():
-    if puerto_ocupado():              # ya hay un servidor/vigilante corriendo: no duplicar
+    if puerto_ocupado() or os.path.exists(DETENER):   # ya hay uno corriendo, o se pidió detener
         return
     log("vigilante iniciado")
     while True:
@@ -41,6 +42,9 @@ def main():
             p = subprocess.Popen([sys.executable, "-u", os.path.join(BASE, "servidor_inventario.py"), "--sin-navegador"],
                                  cwd=BASE, stdout=fh, stderr=fh, stdin=subprocess.DEVNULL, creationflags=NO_WINDOW)
             code = p.wait()
+        if os.path.exists(DETENER):
+            log("servidor detenido a pedido, vigilante finalizado")
+            return
         log(f"servidor detenido (código {code}), reinicio en 10 s")
         time.sleep(10)
         if puerto_ocupado():          # otro proceso tomó el puerto: este vigilante termina

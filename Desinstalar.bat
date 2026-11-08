@@ -2,17 +2,18 @@
 setlocal EnableExtensions
 REM ==================================================================
 REM  INVENTARIO BAJO SOPPALCO - Desinstalacion (doble clic)
+REM  Detiene el programa y quita el icono y el arranque al iniciar sesion.
 REM  No borra los datos (carpeta "datos").
 REM ==================================================================
 cd /d "%~dp0"
 title Inventario Bajo Soppalco - Desinstalacion
+set "PY="
+if exist "sistema\python_path.txt" set /p PY=<"sistema\python_path.txt"
+if defined PY if not exist "%PY%" set "PY="
+if not defined PY if exist "%~dp0sistema\python\python.exe" set "PY=%~dp0sistema\python\python.exe"
+if not defined PY set "PY=python"
 echo.
-echo  [1/3] Quitando arranque al iniciar sesion e icono del escritorio...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sistema\quitar_accesos.ps1"
-echo  [2/3] Deteniendo el programa...
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name like 'python%%'\" | Where-Object { $_.CommandLine -like '*servicio.pyw*' -or $_.CommandLine -like '*servidor_inventario.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
-echo  [3/3] Limpiando...
-del /q "sistema\python_path.txt" >nul 2>&1
+"%PY%" "%~dp0sistema\accesos.py" desinstalar
 echo.
 echo  Listo. Los datos siguen en la carpeta "datos".
 echo.

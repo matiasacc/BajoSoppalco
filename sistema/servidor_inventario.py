@@ -886,6 +886,14 @@ class H(BaseHTTPRequestHandler):
             return self._send(200 if ses else 401, dict(ok=bool(ses)) if ses else dict(error="Sesión cerrada."))
         if path == "/api/login":
             return self._guard(api_login, body)
+        if path == "/api/apagar":
+            # lo usa Desinstalar.bat: solo desde esta misma PC y con la clave de apagar.key
+            if self.client_address[0] not in ("127.0.0.1", "::1") or not secrets.compare_digest(
+                    self.headers.get("X-Apagar", ""), CLAVE_APAGAR):
+                return self._send(403, dict(error="No permitido"))
+            self._send(200, dict(ok=True))
+            threading.Thread(target=apagar, daemon=True).start()
+            return
         if path.startswith("/api/admin/"):
             if not token_ok(self._token()):
                 return self._send(401, dict(error="Sesión vencida: volver a ingresar."))
@@ -928,12 +936,25 @@ def ip_local():
         s.close()
 
 
+CLAVE_APAGAR = secrets.token_hex(16)
+SRV = None
+
+
+def apagar():
+    """Cierre ordenado: espera a que termine cualquier escritura del Excel."""
+    time.sleep(0.3)
+    with LOCK:
+        if SRV:
+            SRV.shutdown()
+
+
 def main():
+    global SRV
     cm.asegurar_excel()
     threading.Thread(target=ciclo_backup, daemon=True).start()
     cfg = load_config()
     try:
-        srv = Servidor((HOST, PORT), H)
+        srv = SRV = Servidor((HOST, PORT), H)
     except OSError:
         # puerto ocupado: ya hay un servidor corriendo (p. ej. el de inicio automático)
         print(f"El servidor ya está corriendo en esta PC (puerto {PORT}). Abriendo el navegador...")
@@ -957,9 +978,15 @@ def main():
     if "--sin-navegador" not in sys.argv:
         threading.Timer(1.0, lambda: webbrowser.open(f"http://localhost:{PORT}")).start()
     try:
+        with open(os.path.join(BASE, "apagar.key"), "w", encoding="utf-8") as fh:
+            fh.write(CLAVE_APAGAR)
+    except OSError:
+        pass
+    try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+    print("Servidor detenido.")
 
 
 if __name__ == "__main__":

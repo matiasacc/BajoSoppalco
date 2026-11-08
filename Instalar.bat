@@ -24,8 +24,6 @@ if not defined PY (
   goto fin
 )
 call :paso "      %PY%"
-for %%F in ("%PY%") do set "PYW=%%~dpFpythonw.exe"
-if not exist "%PYW%" set "PYW=%PY%"
 
 call :paso "[2/3] Verificando..."
 "%PY%" -c "import sys;sys.path.insert(0,r'%~dp0sistema');import cargar_movimientos" >> "%LOG%" 2>&1
@@ -37,17 +35,8 @@ if errorlevel 1 (
 call :paso "      OK"
 
 call :paso "[3/3] Icono en el escritorio y arranque al iniciar sesion..."
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sistema\quitar_accesos.ps1" >> "%LOG%" 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sistema\crear_acceso_directo.ps1" -Sistema "%~dp0sistema" -Pythonw "%PYW%" >> "%LOG%" 2>&1
+"%PY%" "%~dp0sistema\accesos.py" instalar >> "%LOG%" 2>&1
 if errorlevel 1 ( call :paso "      AVISO: no se pudieron crear los accesos (ver instalacion.log)." ) else ( call :paso "      OK" )
-REM refresca los iconos del escritorio
-ie4uinit.exe -show >nul 2>&1
-
-call :paso "      Iniciando el programa..."
-start "" "%PYW%" "%~dp0sistema\servicio.pyw"
-timeout /t 3 /nobreak >nul
-start "" "%PYW%" "%~dp0sistema\abrir_inventario.pyw"
-call :paso "      OK"
 
 echo.
 echo  ==============================================================

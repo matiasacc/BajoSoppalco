@@ -15,3 +15,5 @@ __pycache__/
 ~$*
 Thumbs.db
 desktop.ini
+sistema/detener.flag
+sistema/apagar.key

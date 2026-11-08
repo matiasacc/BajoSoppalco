@@ -41,7 +41,6 @@ Desde esa PC se usa el <b>icono del escritorio</b>; desde cualquier otra PC o ce
 <tr><td><code>datos\Informe_Inventario.html</code></td><td>Copia del informe de inventario (se actualiza sola).</td></tr>
 <tr><td><code>herramientas\Iniciar servidor con ventana.bat</code></td><td>Arranque manual con ventana (diagnóstico o uso sin instalar).</td></tr>
 <tr><td><code>herramientas\Cargar movimientos desde CSV.bat</code></td><td>Carga alternativa desde <code>movimientos.csv</code>.</td></tr>
-<tr><td><code>herramientas\Regla de firewall (IT).bat</code></td><td>Para IT, solo si otra PC no puede entrar: regla de firewall TCP 8080.</td></tr>
 <tr><td><code>sistema\</code></td><td>Archivos del programa. <b>No modificar.</b></td></tr>
 </table>
 <p class="small">Si no existe la planilla, el programa crea una vacía con la estructura completa.
@@ -87,7 +86,8 @@ La muestra el instalador al terminar.</p>
 En la PC servidor siempre funciona <code>http://localhost:8080</code>.</p>
 <p class="small">Si la IP del servidor cambia (sin IP fija), hay que pasar la nueva dirección.
 Si otra PC no logra entrar y la red es la correcta, el firewall de la PC servidor la está bloqueando:
-IT ejecuta <i>herramientas\Regla de firewall (IT).bat</i>.</p>
+IT crea una regla de entrada para el puerto TCP 8080 (red de dominio / privada), por ejemplo desde una consola de administrador:<br>
+<code>netsh advfirewall firewall add rule name="Inventario Bajo Soppalco" dir=in action=allow protocol=TCP localport=8080 profile=domain,private</code></p>
 </div></div>
 
 <h2>5. Uso diario: cargar movimientos</h2>
@@ -159,7 +159,7 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 <h2>9. Desinstalar</h2>
 <ol>
 <li>Doble clic en <code>Desinstalar.bat</code>: detiene el servidor y quita el icono y el arranque automático.</li>
-<li>Si IT había creado la regla de firewall, la quitan ellos (comando dentro del archivo de IT).</li>
+<li>Si IT había creado la regla de firewall, la quitan ellos: <code>netsh advfirewall firewall delete rule name="Inventario Bajo Soppalco"</code></li>
 <li>Guardar una copia de <code>datos\Inventario_Bajo_Soppalco.xlsx</code> y borrar la carpeta.</li>
 </ol>
 

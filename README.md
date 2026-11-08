@@ -29,7 +29,7 @@ Instrucciones completas: [`LEEME - Instrucciones.pdf`](LEEME%20-%20Instrucciones
 |---|---|
 | `Instalar.bat`, `Desinstalar.bat` | Instalación en la PC servidor |
 | `datos/` | Excel con los datos reales (**no se sube al repositorio**) |
-| `herramientas/` | Carga por CSV, arranque manual con ventana, regla de firewall para IT |
+| `herramientas/` | Carga por CSV, arranque manual con ventana |
 | `sistema/` | Programa (Python + página web); `python/` portátil y `lib/` con openpyxl |
 | `docs/` | Fuente del PDF de instrucciones |
 
