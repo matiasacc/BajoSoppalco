@@ -17,3 +17,6 @@ Thumbs.db
 desktop.ini
 sistema/detener.flag
 sistema/apagar.key
+sistema/python/
+sistema/python.zip
+python-*-embed-amd64.zip
