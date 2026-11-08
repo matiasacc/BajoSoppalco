@@ -956,6 +956,10 @@ def apagar():
 
 def main():
     global SRV
+    if sys.stdout is None or sys.stderr is None:   # pythonw (arranque al iniciar sesión): sin consola
+        fh = open(os.path.join(BASE, "servidor.log"), "a", encoding="utf-8", buffering=1)
+        sys.stdout = sys.stdout or fh
+        sys.stderr = sys.stderr or fh
     cfg = load_config()
     # Primero se toma el puerto: así nunca hay dos servidores tocando el mismo Excel.
     try:
@@ -964,8 +968,7 @@ def main():
         # puerto ocupado: ya hay un servidor corriendo (p. ej. el de inicio automático)
         print(f"El servidor ya está corriendo en esta PC (puerto {PORT}). Abriendo el navegador...")
         if "--sin-navegador" in sys.argv:
-            time.sleep(30)          # modo servicio: esperar y dejar que el .bat reintente
-            sys.exit(1)
+            return
         webbrowser.open(f"http://localhost:{PORT}")
         time.sleep(3)
         return

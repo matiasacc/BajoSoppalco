@@ -36,11 +36,8 @@ def servidor_activo():
 def arrancar_servidor():
     exe = sys.executable                              # pythonw.exe si se lanzó desde el icono
     log = open(os.path.join(BASE, "servidor.log"), "a", encoding="utf-8")
-    flags = 0
-    if os.name == "nt":
-        flags = 0x00000008 | 0x00000200 | 0x08000000  # DETACHED | NEW_PROCESS_GROUP | NO_WINDOW
     subprocess.Popen([exe, "-u", os.path.join(BASE, "servidor_inventario.py"), "--sin-navegador"],
-                     cwd=BASE, stdout=log, stderr=log, stdin=subprocess.DEVNULL, creationflags=flags)
+                     cwd=BASE, stdout=log, stderr=log, stdin=subprocess.DEVNULL)
     for _ in range(120):                              # espera hasta 60 s (la primera vez puede tardar)
         time.sleep(0.5)
         if servidor_activo():

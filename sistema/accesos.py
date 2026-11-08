@@ -3,13 +3,16 @@
 Instalación y desinstalación para el usuario actual (lo llaman Instalar.bat y Desinstalar.bat).
 
   python accesos.py instalar      icono del escritorio + arranque al iniciar sesión, y abre el programa
-  python accesos.py desinstalar   detiene el programa y quita los accesos
+  python accesos.py desinstalar   cierra el programa y quita esos dos accesos
 
 Los accesos directos se crean con la interfaz estándar de Windows (IShellLink), la misma que
 usa el Explorador. No se modifica el registro ni se usan permisos especiales.
+Registro: sistema/instalacion.log
 """
 import ctypes
+import datetime as dt
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -18,130 +21,77 @@ import urllib.request
 BASE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("INVENTARIO_PORT", "8080"))
 NOMBRE = "Inventario Bajo Soppalco.lnk"
-DETENER = os.path.join(BASE, "detener.flag")      # el vigilante no reinicia el servidor mientras exista
+LOG = os.path.join(BASE, "instalacion.log")
 CLAVE_APAGAR = os.path.join(BASE, "apagar.key")   # la escribe el servidor al arrancar
 
 
-# ---------------------------------------------------------------- utilidades de Windows (ctypes)
+def paso(txt=""):
+    print(txt)
+    try:
+        with open(LOG, "a", encoding="utf-8") as fh:
+            fh.write(txt + "\n")
+    except OSError:
+        pass
+
+
+# ---------------------------------------------------------------- carpetas y accesos (Windows)
 class GUID(ctypes.Structure):
     _fields_ = [("d1", ctypes.c_uint32), ("d2", ctypes.c_uint16), ("d3", ctypes.c_uint16), ("d4", ctypes.c_ubyte * 8)]
 
     def __init__(self, texto):
         h = texto.strip("{}").replace("-", "")
-        b = bytes.fromhex(h[16:])
-        super().__init__(int(h[:8], 16), int(h[8:12], 16), int(h[12:16], 16), (ctypes.c_ubyte * 8)(*b))
+        super().__init__(int(h[:8], 16), int(h[8:12], 16), int(h[12:16], 16),
+                         (ctypes.c_ubyte * 8)(*bytes.fromhex(h[16:])))
 
 
-FOLDERID = {
-    "Desktop": "{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}",
-    "PublicDesktop": "{C4AA340D-F20F-4863-AFEF-F87EF2E6BA25}",
-    "Startup": "{B97D20BB-F46A-4C97-BA10-5E3608430854}",
-    "CommonStartup": "{82A5EA35-D9CD-47C5-9629-E15D2F714E6E}",
-}
+ESCRITORIO = "{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}"
+INICIO = "{B97D20BB-F46A-4C97-BA10-5E3608430854}"
 
 
-def carpeta(nombre):
-    """Ruta real de una carpeta especial (respeta el Escritorio redirigido a OneDrive)."""
+def carpeta(folderid):
+    """Ruta de una carpeta del usuario (respeta el Escritorio redirigido a OneDrive)."""
     p = ctypes.c_wchar_p()
-    try:
-        r = ctypes.windll.shell32.SHGetKnownFolderPath(ctypes.byref(GUID(FOLDERID[nombre])), 0, None, ctypes.byref(p))
-        if r == 0 and p.value:
-            ruta = p.value
-            ctypes.windll.ole32.CoTaskMemFree(p)
-            return ruta
-    except Exception:
-        pass
-    return None
+    if ctypes.windll.shell32.SHGetKnownFolderPath(ctypes.byref(GUID(folderid)), 0, None, ctypes.byref(p)) != 0:
+        raise OSError("No se encontró la carpeta del usuario.")
+    ruta = p.value
+    ctypes.windll.ole32.CoTaskMemFree(p)
+    return ruta
 
 
 def _metodo(ptr, indice, *argtypes):
-    """Función de la tabla de métodos de un objeto COM."""
     vtbl = ctypes.cast(ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
     return ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p, *argtypes)(vtbl[indice])
 
 
-def crear_acceso(destino_lnk, programa, argumentos, carpeta_trabajo, icono, descripcion):
+def crear_acceso(destino, programa, argumentos, descripcion):
     ole32 = ctypes.windll.ole32
     ole32.CoInitialize(None)
     link = ctypes.c_void_p()
     hr = ole32.CoCreateInstance(ctypes.byref(GUID("{00021401-0000-0000-C000-000000000046}")), None, 1,
                                 ctypes.byref(GUID("{000214F9-0000-0000-C000-000000000046}")), ctypes.byref(link))
     if hr != 0:
-        raise OSError(f"CoCreateInstance ShellLink: {hr & 0xFFFFFFFF:#x}")
+        raise OSError(f"No se pudo crear el acceso ({hr & 0xFFFFFFFF:#x}).")
     W = ctypes.c_wchar_p
     try:
-        # IShellLinkW: 7 SetDescription, 9 SetWorkingDirectory, 11 SetArguments, 17 SetIconLocation, 20 SetPath
-        for idx, val in ((20, programa), (11, argumentos), (9, carpeta_trabajo), (7, descripcion)):
-            hr = _metodo(link, idx, W)(link, val)
-            if hr != 0:
-                raise OSError(f"IShellLinkW[{idx}]: {hr & 0xFFFFFFFF:#x}")
-        _metodo(link, 17, W, ctypes.c_int)(link, icono, 0)
+        # IShellLinkW: 20 SetPath, 11 SetArguments, 9 SetWorkingDirectory, 7 SetDescription, 17 SetIconLocation
+        _metodo(link, 20, W)(link, programa)
+        _metodo(link, 11, W)(link, argumentos)
+        _metodo(link, 9, W)(link, BASE)
+        _metodo(link, 7, W)(link, descripcion)
+        _metodo(link, 17, W, ctypes.c_int)(link, os.path.join(BASE, "inventario.ico"), 0)
         pf = ctypes.c_void_p()
         hr = _metodo(link, 0, ctypes.c_void_p, ctypes.c_void_p)(
-            link, ctypes.byref(GUID("{0000010B-0000-0000-C000-000000000046}")), ctypes.byref(pf))   # QueryInterface IPersistFile
+            link, ctypes.byref(GUID("{0000010B-0000-0000-C000-000000000046}")), ctypes.byref(pf))
         if hr != 0:
-            raise OSError(f"IPersistFile: {hr & 0xFFFFFFFF:#x}")
+            raise OSError(f"No se pudo guardar el acceso ({hr & 0xFFFFFFFF:#x}).")
         try:
-            hr = _metodo(pf, 6, W, ctypes.c_int)(pf, destino_lnk, 1)                                # IPersistFile.Save
+            hr = _metodo(pf, 6, W, ctypes.c_int)(pf, destino, 1)        # IPersistFile.Save
             if hr != 0:
-                raise OSError(f"Guardar {destino_lnk}: {hr & 0xFFFFFFFF:#x}")
+                raise OSError(f"No se pudo guardar {destino} ({hr & 0xFFFFFFFF:#x}).")
         finally:
             _metodo(pf, 2)(pf)
     finally:
-        _metodo(link, 2)(link)                                                                       # Release
-
-
-def refrescar_iconos():
-    try:
-        ctypes.windll.shell32.SHChangeNotify(0x08000000, 0, None, None)   # SHCNE_ASSOCCHANGED
-    except Exception:
-        pass
-
-
-# ---------------------------------------------------------------- accesos del programa
-def carpetas_accesos():
-    home = os.environ.get("USERPROFILE", "")
-    cs = [carpeta(n) for n in FOLDERID]
-    cs += [os.path.join(home, "Desktop"), os.path.join(home, "Escritorio")]
-    try:
-        for d in os.listdir(home):
-            if d.lower().startswith("onedrive"):
-                cs += [os.path.join(home, d, "Desktop"), os.path.join(home, d, "Escritorio")]
-    except OSError:
-        pass
-    vistos, res = set(), []
-    for c in cs:
-        if c and os.path.isdir(c) and os.path.normcase(c) not in vistos:
-            vistos.add(os.path.normcase(c)); res.append(c)
-    return res
-
-
-def es_nuestro(ruta):
-    if os.path.basename(ruta).lower() == NOMBRE.lower():
-        return True
-    try:
-        with open(ruta, "rb") as fh:
-            datos = fh.read(65536)
-    except OSError:
-        return False
-    return any(t.encode("utf-16-le") in datos or t.encode("latin-1") in datos
-               for t in ("abrir_inventario.pyw", "servicio.pyw"))
-
-
-def quitar_accesos():
-    n = 0
-    for c in carpetas_accesos():
-        for f in os.listdir(c):
-            ruta = os.path.join(c, f)
-            if f.lower().endswith(".lnk") and es_nuestro(ruta):
-                try:
-                    os.remove(ruta); n += 1
-                    print(f"      Quitado: {ruta}")
-                except OSError as e:
-                    print(f"      No se pudo quitar {ruta}: {e}")
-    if not n:
-        print("      No habia accesos para quitar.")
-    refrescar_iconos()
+        _metodo(link, 2)(link)
 
 
 def pythonw():
@@ -149,23 +99,29 @@ def pythonw():
     return w if os.path.isfile(w) else sys.executable
 
 
+def accesos():
+    """Las dos rutas de acceso del programa: escritorio e inicio de sesión."""
+    return [os.path.join(carpeta(ESCRITORIO), NOMBRE), os.path.join(carpeta(INICIO), NOMBRE)]
+
+
 def crear_accesos():
-    pw, ico = pythonw(), os.path.join(BASE, "inventario.ico")
-    escritorio = carpeta("Desktop") or os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
-    inicio = carpeta("Startup")
-    crear_acceso(os.path.join(escritorio, NOMBRE), pw, f'"{os.path.join(BASE, "abrir_inventario.pyw")}"',
-                 BASE, ico, "Inventario Bajo Soppalco")
-    print(f"      Escritorio: {escritorio}")
-    if inicio:
-        crear_acceso(os.path.join(inicio, NOMBRE), pw, f'"{os.path.join(BASE, "servicio.pyw")}"',
-                     BASE, ico, "Inventario Bajo Soppalco (servidor)")
-        print(f"      Inicio de sesion: {inicio}")
-    refrescar_iconos()
+    esc, ini = accesos()
+    crear_acceso(esc, pythonw(), f'"{os.path.join(BASE, "abrir_inventario.pyw")}"', "Inventario Bajo Soppalco")
+    paso(f"      Escritorio: {esc}")
+    crear_acceso(ini, pythonw(), f'"{os.path.join(BASE, "servidor_inventario.py")}" --sin-navegador',
+                 "Inventario Bajo Soppalco (servidor)")
+    paso(f"      Inicio de sesion: {ini}")
 
 
-# ---------------------------------------------------------------- arrancar / detener
+def quitar_accesos():
+    for ruta in accesos():
+        if os.path.exists(ruta):
+            os.remove(ruta)
+            paso(f"      Quitado: {ruta}")
+
+
+# ---------------------------------------------------------------- servidor
 def servidor_activo():
-    import socket
     try:
         with socket.create_connection(("127.0.0.1", PORT), timeout=1):
             return True
@@ -175,10 +131,7 @@ def servidor_activo():
 
 def detener():
     """Pide al servidor que se cierre en orden (termina de escribir el Excel antes)."""
-    with open(DETENER, "w") as fh:
-        fh.write("1")
     if not servidor_activo():
-        print("      No estaba en marcha.")
         return True
     try:
         with open(CLAVE_APAGAR, encoding="utf-8") as fh:
@@ -186,60 +139,77 @@ def detener():
         req = urllib.request.Request(f"http://127.0.0.1:{PORT}/api/apagar", data=b"{}", method="POST",
                                      headers={"X-Apagar": clave})
         urllib.request.urlopen(req, timeout=5).read()
-    except Exception as e:
-        print(f"      Aviso: {e}")
+    except Exception:
+        pass
     for _ in range(30):
         if not servidor_activo():
-            print("      Detenido.")
             return True
         time.sleep(0.5)
-    print("      No se pudo detener: reiniciar la PC antes de borrar la carpeta.")
     return False
 
 
-def arrancar():
+def ip_local():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        os.remove(DETENER)
+        s.connect(("10.255.255.255", 1))
+        return s.getsockname()[0]
     except OSError:
-        pass
-    pw = pythonw()
-    flags = 0x00000008 | 0x00000200 if os.name == "nt" else 0   # DETACHED_PROCESS | NEW_PROCESS_GROUP
-    subprocess.Popen([pw, os.path.join(BASE, "servicio.pyw")], cwd=BASE, creationflags=flags, close_fds=True)
-    for _ in range(120):                       # hasta 60 s: la primera vez puede tardar
-        if servidor_activo():
-            break
-        time.sleep(0.5)
-    subprocess.Popen([pw, os.path.join(BASE, "abrir_inventario.pyw")], cwd=BASE, creationflags=flags, close_fds=True)
+        return None
+    finally:
+        s.close()
 
 
-def main():
-    accion = sys.argv[1] if len(sys.argv) > 1 else ""
-    if accion == "instalar":
-        print("      Quitando accesos anteriores...")
+# ---------------------------------------------------------------- acciones
+def instalar():
+    with open(LOG, "w", encoding="utf-8") as fh:
+        fh.write(f"==== {dt.datetime.now():%d/%m/%Y %H:%M} ====\n")
+    paso("[1/3] Verificando el programa...")
+    sys.path.insert(0, BASE)
+    try:
+        import cargar_movimientos  # noqa: F401  (incluye openpyxl desde sistema/lib)
+    except Exception as e:
+        paso(f"      ERROR: {e}")
+        return 1
+    paso("      OK")
+
+    paso("[2/3] Icono en el escritorio y arranque al iniciar sesion...")
+    try:
+        detener()                      # si había una versión anterior abierta
         quitar_accesos()
-        print("      Creando accesos...")
-        try:
-            crear_accesos()
-        except Exception as e:
-            print(f"      ERROR al crear los accesos: {e}")
-            return 1
-        print("      Iniciando el programa...")
-        arrancar()
-        return 0
-    if accion == "desinstalar":
-        print("[1/2] Deteniendo el programa...")
-        detener()
-        print("[2/2] Quitando el icono y el arranque al iniciar sesion...")
+        crear_accesos()
+    except Exception as e:
+        paso(f"      ERROR: {e}")
+        return 1
+
+    paso("[3/3] Abriendo el programa...")
+    subprocess.Popen([pythonw(), os.path.join(BASE, "abrir_inventario.pyw")], cwd=BASE)
+    ip = ip_local()
+    paso()
+    paso("  ==============================================================")
+    paso("   INSTALACION TERMINADA")
+    paso('   En esta PC: icono "Inventario Bajo Soppalco" del escritorio')
+    if ip:
+        paso(f"   Desde otra PC: http://{ip}:{PORT}")
+    paso("   Contrasena inicial de Administracion: soppalco")
+    paso("  ==============================================================")
+    return 0
+
+
+def desinstalar():
+    paso("[1/2] Cerrando el programa...")
+    paso("      OK" if detener() else "      No se pudo cerrar: reiniciar la PC antes de borrar la carpeta.")
+    paso("[2/2] Quitando el icono y el arranque al iniciar sesion...")
+    try:
         quitar_accesos()
-        for f in ("python_path.txt",):
-            try:
-                os.remove(os.path.join(BASE, f))
-            except OSError:
-                pass
-        return 0
-    print(__doc__)
-    return 2
+    except Exception as e:
+        paso(f"      ERROR: {e}")
+        return 1
+    paso("      OK")
+    paso()
+    paso('  Listo. Los datos siguen en la carpeta "datos".')
+    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    accion = sys.argv[1] if len(sys.argv) > 1 else ""
+    sys.exit(instalar() if accion == "instalar" else desinstalar() if accion == "desinstalar" else 2)
