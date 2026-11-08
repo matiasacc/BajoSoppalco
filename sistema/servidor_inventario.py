@@ -789,7 +789,13 @@ class H(BaseHTTPRequestHandler):
         except Exception as e:  # error inesperado: se informa sin tumbar el servidor
             import traceback
             traceback.print_exc()
-            code, body = 500, dict(error=f"Error interno: {e}")
+            import zipfile, zlib
+            if isinstance(e, (zipfile.BadZipFile, zlib.error)):
+                code, body = 500, dict(error="El Excel datos\\Inventario_Bajo_Soppalco.xlsx está dañado (no se puede leer). "
+                                             "Restaurar una copia de datos\\backups (ver instrucciones) o, si es una instalación nueva, "
+                                             "borrarlo: el programa crea uno nuevo.")
+            else:
+                code, body = 500, dict(error=f"Error interno: {e}")
         self._send(code, body)
 
     def do_GET(self):
