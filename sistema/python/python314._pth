@@ -1,8 +1,0 @@
-python314.zip
-.
-..\lib
-..
-
-# Inventario Bajo Soppalco: agrega sistema\lib (openpyxl) y sistema\ al path.
-# Uncomment to run site.main() automatically
-#import site
