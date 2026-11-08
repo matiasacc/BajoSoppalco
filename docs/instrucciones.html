@@ -35,7 +35,7 @@ Desde esa PC se usa el <b>icono del escritorio</b>; desde cualquier otra PC o ce
 <table>
 <tr><th style="width:38%">Archivo / carpeta</th><th>Para qué sirve</th></tr>
 <tr><td><code>LEEME - Instrucciones.pdf</code></td><td>Este documento.</td></tr>
-<tr><td><code>Instalar.bat</code></td><td>Instala en la PC servidor: icono del escritorio, arranque al iniciar sesión y librería de Excel. Doble clic.</td></tr>
+<tr><td><code>Instalar.bat</code></td><td>Instala en la PC servidor: icono del escritorio y arranque al iniciar sesión. Doble clic.</td></tr>
 <tr><td><code>Desinstalar.bat</code></td><td>Quita lo anterior y detiene el servidor. No borra los datos.</td></tr>
 <tr><td><code>datos\Inventario_Bajo_Soppalco.xlsx</code></td><td>Base de datos: maestro, movimientos, stock, personas.</td></tr>
 <tr><td><code>datos\Informe_Inventario.html</code></td><td>Copia del informe de inventario (se actualiza sola).</td></tr>
@@ -52,8 +52,7 @@ Se generan solos: <code>datos\pendientes.json</code> (movimientos en espera si e
 <h2>2. Requisitos (solo en la PC servidor)</h2>
 <ul>
 <li>Windows 10/11, PC encendida mientras se use el sistema.</li>
-<li><b>Python 3.8 o superior</b> (python.org o Microsoft Store). Si se instala desde python.org, marcar <i>“Add python.exe to PATH”</i>.</li>
-<li>Librería para Excel (openpyxl): la instala <code>Instalar.bat</code> automáticamente.</li>
+<li><b>No hace falta instalar nada más.</b> El programa trae su propio Python portátil (<code>sistema\python</code>) y la librería de Excel (<code>sistema\lib</code>); no se instalan en Windows ni requieren internet.</li>
 <li>Recomendado: <b>IP fija</b> para esta PC (así la dirección no cambia) y visto bueno de IT para el uso del puerto <b>8080</b> en la red interna.</li>
 <li>Configuración de energía: <i>Suspender: Nunca</i>.</li>
 </ul>
@@ -169,7 +168,7 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 <tr><th style="width:36%">Síntoma</th><th>Solución</th></tr>
 <tr><td>Otra PC no abre la dirección</td><td>Verificar servidor encendido, IP correcta y misma red. Si sigue: firewall (punto 4).</td></tr>
 <tr><td>“Sin conexión con el servidor”</td><td>En la PC servidor abrir el icono (lo levanta) o reiniciar la PC.</td></tr>
-<tr><td>El icono no abre nada</td><td>Revisar <code>sistema\servidor.log</code>. Falta Python u openpyxl: ver Requisitos.</td></tr>
+<tr><td>El icono no abre nada</td><td>Revisar <code>sistema\servidor.log</code>. Verificar que existan <code>sistema\python</code> y <code>sistema\lib</code> (volver a descargar el programa completo).</td></tr>
 <tr><td>“Movimientos en espera”</td><td>Alguien tiene el Excel abierto: cerrarlo.</td></tr>
 <tr><td>No deja borrar la carpeta</td><td>Ejecutar <code>Desinstalar.bat</code>.</td></tr>
 <tr><td>“Legajo o contraseña incorrectos” / sin contraseña</td><td>Verificar el legajo. Si la olvidó: un administrador abre <i>Cambiar</i> en Personas y la persona escribe una nueva.</td></tr>

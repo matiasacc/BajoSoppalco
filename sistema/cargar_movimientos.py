@@ -31,11 +31,18 @@ import shutil
 import sys
 from collections import defaultdict
 
+# openpyxl viene incluido en sistema/lib (no hace falta pip). La carpeta del
+# script se agrega a mano porque el Python portátil (sistema/python) no la suma solo.
+_AQUI = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.join(_AQUI, "lib"), _AQUI):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 try:
     import openpyxl
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 except ImportError:
-    sys.exit("Falta openpyxl. Instalar con:  pip install openpyxl")
+    sys.exit("Falta openpyxl: revisar que exista la carpeta sistema/lib.")
 
 # Estructura de carpetas:
 #   <raíz>/datos/         Excel (base de datos), informe HTML, pendientes

@@ -30,6 +30,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # Python portátil: no agrega la carpeta del script
 import cargar_movimientos as cm
 import openpyxl
 

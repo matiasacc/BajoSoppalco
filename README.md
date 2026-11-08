@@ -12,9 +12,10 @@ Una PC funciona como servidor web interno (HTTP, puerto 8080) y las demás PCs d
 
 ## Instalación
 
-1. Instalar Python 3.8 o superior (Microsoft Store o python.org).
-2. Copiar esta carpeta a `C:\Inventario Bajo Soppalco`.
-3. Doble clic en `Instalar.bat`.
+1. Copiar esta carpeta a `C:\Inventario Bajo Soppalco`.
+2. Doble clic en `Instalar.bat`.
+
+No hace falta instalar Python: el programa trae uno portátil (`sistema/python`) y la librería de Excel (`sistema/lib`).
 
 La primera vez el programa crea la planilla con **datos de ejemplo** para probar: 4 insumos y 2 usuarios
 (legajos `1001` y `1002`, contraseña `1234`). Se borran desde Administración antes de empezar a usarlo.
@@ -29,7 +30,7 @@ Instrucciones completas: [`LEEME - Instrucciones.pdf`](LEEME%20-%20Instrucciones
 | `Instalar.bat`, `Desinstalar.bat` | Instalación en la PC servidor |
 | `datos/` | Excel con los datos reales (**no se sube al repositorio**) |
 | `herramientas/` | Carga por CSV, arranque manual con ventana, regla de firewall para IT |
-| `sistema/` | Programa (Python + página web) |
+| `sistema/` | Programa (Python + página web); `python/` portátil y `lib/` con openpyxl |
 | `docs/` | Fuente del PDF de instrucciones |
 
 ## Actualizar una instalación
