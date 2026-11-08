@@ -344,7 +344,23 @@ def crear_excel_vacio(path, ejemplo=True):
         ins.cell(row=r, column=2).font = F_N
     ins["A1"].font = Font(name=FONT, size=13, bold=True)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    wb.save(path)
+    guardar(wb, path)
+
+
+def guardar(wb, path=None):
+    """Guarda sin riesgo de dejar el Excel a medio escribir: primero a un archivo temporal y
+    después lo reemplaza de una vez. Si el Excel está abierto (bloqueado) lanza PermissionError."""
+    path = path or XLSX
+    tmp = os.path.join(os.path.dirname(path), ".guardando_" + os.path.basename(path))
+    wb.save(tmp)
+    try:
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def asegurar_excel():
@@ -878,7 +894,7 @@ def main():
             ws.auto_filter.ref = f"A1:J{r}"
             rebuild_stock(wb)
             try:
-                wb.save(XLSX)
+                guardar(wb)
             except PermissionError:
                 sys.exit("No se pudo guardar: CERRÁ el Excel y volvé a correr (no se cargó nada).")
             os.makedirs(CARGADOS, exist_ok=True)

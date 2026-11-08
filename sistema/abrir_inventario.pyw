@@ -41,7 +41,7 @@ def arrancar_servidor():
         flags = 0x00000008 | 0x00000200 | 0x08000000  # DETACHED | NEW_PROCESS_GROUP | NO_WINDOW
     subprocess.Popen([exe, "-u", os.path.join(BASE, "servidor_inventario.py"), "--sin-navegador"],
                      cwd=BASE, stdout=log, stderr=log, stdin=subprocess.DEVNULL, creationflags=flags)
-    for _ in range(40):                               # espera hasta 20 s
+    for _ in range(120):                              # espera hasta 60 s (la primera vez puede tardar)
         time.sleep(0.5)
         if servidor_activo():
             return True

@@ -205,7 +205,7 @@ def arrancar():
     pw = pythonw()
     flags = 0x00000008 | 0x00000200 if os.name == "nt" else 0   # DETACHED_PROCESS | NEW_PROCESS_GROUP
     subprocess.Popen([pw, os.path.join(BASE, "servicio.pyw")], cwd=BASE, creationflags=flags, close_fds=True)
-    for _ in range(40):
+    for _ in range(120):                       # hasta 60 s: la primera vez puede tardar
         if servidor_activo():
             break
         time.sleep(0.5)

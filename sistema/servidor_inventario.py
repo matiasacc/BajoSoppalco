@@ -135,7 +135,7 @@ def append_movs(wb, movs):
 
 def save_wb(wb):
     """Guarda; si el Excel está abierto (bloqueado) lanza PermissionError."""
-    wb.save(cm.XLSX)
+    cm.guardar(wb)
 
 
 def regenerar_html(wb=None):
@@ -956,9 +956,8 @@ def apagar():
 
 def main():
     global SRV
-    cm.asegurar_excel()
-    threading.Thread(target=ciclo_backup, daemon=True).start()
     cfg = load_config()
+    # Primero se toma el puerto: así nunca hay dos servidores tocando el mismo Excel.
     try:
         srv = SRV = Servidor((HOST, PORT), H)
     except OSError:
@@ -970,6 +969,8 @@ def main():
         webbrowser.open(f"http://localhost:{PORT}")
         time.sleep(3)
         return
+    cm.asegurar_excel()
+    threading.Thread(target=ciclo_backup, daemon=True).start()
     print("=" * 60)
     print(" INVENTARIO BAJO SOPPALCO - servidor de carga")
     print(f"   En esta PC:        http://localhost:{PORT}")
