@@ -418,7 +418,7 @@ async function cargarDatos(){
   D.items.forEach(i => { IT[i.cod]=i; BAR[normBar(i.cod)] = i.cod; });
   D.items.forEach(i => { if(i.bar) BAR[normBar(i.bar)] = i.cod; });     // el código de barras propio tiene prioridad
   $("ult").innerHTML = D.ultimos.length ? D.ultimos.map(m => `<tr><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td></tr>`).join("") : `<tr><td colspan=7 class=mut>Sin movimientos</td></tr>`;
-  $("banner").textContent = D.pendientes ? `${D.pendientes} movimiento(s) guardados en espera: el Excel está abierto en algún lado. Se pasan solos cuando se cierre.` : "";
+  $("banner").textContent = D.pendientes ? `${nMov(D.pendientes)} en espera: el Excel está abierto en algún lado. Se pasan solos cuando se cierre.` : "";
   lista = lista.filter(l => IT[l.cod]);
   renderLista(); renderGaleria(); focoScan();
 }
@@ -538,6 +538,7 @@ document.addEventListener("keydown", e => {
 }, true);
 
 /* ---- textos de stock ---- */
+const nMov = n => n === 1 ? "1 movimiento" : `${n} movimientos`;
 function stockTxt(i){
   if(i.act===null) return `<b>Stock: s/d</b> <span class=mut>(${esc(i.estado)})</span>`;
   let t = `<b>Stock: ${fmt(i.act)} ${esc(i.ub)}</b>`;
@@ -602,7 +603,7 @@ $("cargar").onclick = async () => {
   $("cargar").disabled = true; msg($("msg"), "Cargando…");
   const r = await api("/api/movimientos", {lineas: lista.map(l => ({tipo:l.tipo==="ENTRADA"?"E":"S", cod:l.cod, cant:String(l.cant), unidad:l.unidad, obs:l.obs}))});
   if(r.ok){
-    msg($("msg"), r.d.pendiente ? `${r.d.ok} movimiento(s) guardados en espera (el Excel está abierto). Se pasan solos al Excel cuando se cierre.` : `Listo: ${r.d.ok} movimiento(s) cargados a nombre de ${esc(USR.nombre)}${USR.nombre.endsWith(".")?"":"."}`, r.d.pendiente ? "warn" : "ok");
+    msg($("msg"), r.d.pendiente ? `${nMov(r.d.ok)} en espera (el Excel está abierto). Se pasan solos al Excel cuando se cierre.` : `Listo: ${nMov(r.d.ok)} ${r.d.ok===1?"cargado":"cargados"} a nombre de ${esc(USR.nombre)}${USR.nombre.endsWith(".")?"":"."}`, r.d.pendiente ? "warn" : "ok");
     lista = []; store.set("lista", lista); msg($("smsg"), ""); await cargarDatos(); $("scan").focus();
   }else if(r.status === 401){
     salir("vencida");
@@ -932,7 +933,7 @@ async function loadPers(){
     const tr = b.closest("tr"), g = k => tr.querySelector(`[data-f=${k}]`).value.trim();
     const base = {accion:b.dataset.a, fila:+tr.dataset.fila, nombre_actual:tr.dataset.n, legajo:g("legajo"), nombre:g("nombre"), obs:g("obs")};
     if(b.dataset.a === "clave"){ abrirClave(base); return; }
-    if(b.dataset.a === "borrar" && !confirm(`¿Borrar a ${tr.dataset.n}?` + (+b.dataset.u ? `\n\nTiene ${b.dataset.u} movimiento(s): se conservan en el historial con su nombre.` : ""))) return;
+    if(b.dataset.a === "borrar" && !confirm(`¿Borrar a ${tr.dataset.n}?` + (+b.dataset.u ? `\n\nTiene ${nMov(+b.dataset.u)}: se conservan en el historial con su nombre.` : ""))) return;
     persona(base);
   });
 }
