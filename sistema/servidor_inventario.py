@@ -32,6 +32,7 @@ from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # Python portátil: no agrega la carpeta del script
 import cargar_movimientos as cm
+import criticos as cr
 import openpyxl
 
 BASE = cm.BASE
@@ -129,8 +130,8 @@ def append_movs(wb, movs):
         r += 1
         f = m["fecha"] if isinstance(m["fecha"], dt.date) else dt.date.fromisoformat(m["fecha"])
         cm.write_movement(ws, r, f, m["tipo"], m["cod"], m["cant"], m["unidad"], m["persona"],
-                          m["origen"], m["obs"] or None)
-    ws.auto_filter.ref = f"A1:J{r}"
+                          m["origen"], m["obs"] or None, m.get("ref"))
+    ws.auto_filter.ref = f"A1:K{r}"
 
 
 def save_wb(wb):
@@ -182,7 +183,7 @@ def snapshot():
                                  cant=m["cant"], unidad=m["unidad"],
                                  base=cm.base_qty(items[m["cod"]], m["cant"], m["unidad"]),
                                  persona=m["persona"], origen=m["origen"] + " (pendiente)",
-                                 obs=m["obs"], fila=None))
+                                 obs=m["obs"], ref=m.get("ref", ""), fila=None))
         st = cm.compute_stock(items, movs)
         return wb, items, movs, st, npend
 
@@ -331,8 +332,10 @@ def api_movimientos(body, ses):
         if err:
             return 400, dict(error="Hay errores, no se cargó nada.", detalle=sorted({e.strip() for e in err}))
         origen = f"Web {ahora:%d/%m/%Y %H:%M} · legajo {ses['legajo']}"
-        for m in ok:
+        for m, l in zip(ok, lineas):
             m["origen"] = origen
+            # Referencia (Nº OC / remito): solo tiene sentido en las entradas
+            m["ref"] = cm.norm(l.get("ref"))[:40] if m["tipo"] == "ENTRADA" else ""
         append_movs(wb, ok)
         cm.rebuild_stock(wb)
         try:
@@ -581,7 +584,7 @@ def api_admin_movs_get():
     for m in reversed(movs):
         out.append(dict(fila=m["fila"], fecha=m["fecha"].strftime("%d/%m/%Y"), tipo=m["tipo"], cod=m["cod"],
                         ins=items[m["cod"]]["ins"], cant=m["cant"], unidad=m["unidad"], persona=m["persona"],
-                        origen=m["origen"], obs=m["obs"]))
+                        origen=m["origen"], obs=m["obs"], ref=m.get("ref", "")))
     return 200, dict(movs=out)
 
 
@@ -705,8 +708,12 @@ def api_admin_editar_mov(body):
         obs = m["obs"]
         marca = f"[editado {dt.date.today():%d/%m/%Y}, antes {antes}]"
         obs = f"{obs} {marca}".strip() if marca not in (obs or "") else obs
-        for col, v in ((1, m["fecha"]), (2, m["tipo"]), (5, m["cant"]), (6, m["unidad"]), (8, m["persona"]), (10, obs)):
+        ref = cm.norm(c.get("ref"))[:40] or None
+        for col, v in ((1, m["fecha"]), (2, m["tipo"]), (5, m["cant"]), (6, m["unidad"]), (8, m["persona"]), (10, obs),
+                       (cm.MOV_REF, ref)):
             ws.cell(row=r, column=col).value = v
+        if ref:
+            ws.cell(row=r, column=cm.MOV_REF).alignment = cm.Alignment(horizontal="center", vertical="center")
         cm.rebuild_stock(wb)
         try:
             save_wb(wb)
@@ -714,6 +721,82 @@ def api_admin_editar_mov(body):
             return 409, dict(error="El Excel está abierto: cerralo y reintentá.")
         regenerar_html(wb)
         return 200, dict(ok=True)
+
+
+# ---------------------------------------------------------------- insumos críticos y órdenes de compra
+def _f(d):
+    return d.strftime("%d/%m/%Y") if isinstance(d, dt.date) else (d or "")
+
+
+def _datos_criticos(wb, items, movs, st):
+    cri, ocs, cfg = cr.leer_criticos(wb), cr.leer_oc(wb), cr.leer_config(wb)
+    calc = cr.calcular(items, movs, st, cri, ocs, cfg)
+    return calc, cfg
+
+
+def api_admin_criticos_get():
+    wb, items, movs, st, _ = snapshot()
+    calc, cfg = _datos_criticos(wb, items, movs, st)
+    filas = []
+    for f in calc["filas"]:
+        filas.append({k: v for k, v in f.items()})
+    ocs = [dict(fila=o["fila"], nro=o["nro"], fecha=_f(o["fecha"]), fecha_iso=o["fecha"].isoformat() if o["fecha"] else "",
+                cod=o["cod"], ins=o["ins"], cant=o["cant"], prom=_f(o["prom"]),
+                prom_iso=o["prom"].isoformat() if o["prom"] else "", prev=_f(o["prev"]), recibido=o["recibido"],
+                pendiente=o["pendiente"], anulada=o["anulada"], estado=o["estado"], atraso=o["atraso"],
+                obs=o["obs"], reg=o["reg"]) for o in sorted(calc["ocs"], key=lambda o: (o["fecha"] or dt.date.min, o["fila"]), reverse=True)]
+    insumos = [dict(cod=c, ins=i["ins"], ub=i["ub"], emp=i["emp"], fac=i["fac"], emp2=i["emp2"], fac2=i["fac2"],
+                    min=i["min"]) for c, i in sorted(items.items())]
+    return 200, dict(filas=filas, ocs=ocs, contadores=calc["contadores"], cfg=cfg, hoy=_f(calc["hoy"]),
+                     semanas_usadas=round(calc["semanas_usadas"], 2), insumos=insumos, max=cr.MAX_CRITICOS)
+
+
+def _escribir_criticos(fn):
+    """Abre el Excel, aplica fn(wb, items) y guarda. Traduce errores a respuestas."""
+    with LOCK:
+        flush_pend()
+        wb = openpyxl.load_workbook(cm.XLSX)
+        cr.asegurar_hojas(wb)
+        items = cm.read_maestro(wb)
+        try:
+            fn(wb, items)
+        except ValueError as e:
+            return 400, dict(error=str(e))
+        except LookupError as e:
+            return 409, dict(error=str(e))
+        try:
+            save_wb(wb)
+        except PermissionError:
+            return 409, dict(error="El Excel está abierto: cerralo y reintentá.")
+        return 200, dict(ok=True)
+
+
+def api_admin_criticos_post(body):
+    accion = body.get("accion")
+    if accion == "guardar":
+        return _escribir_criticos(lambda wb, items: cr.guardar_critico(wb, items, body.get("cod"), body.get("campos") or {}))
+    if accion == "borrar":
+        def borrar(wb, items):
+            movs = cm.read_movements(wb, items)
+            cr.borrar_critico(wb, items, movs, cm.compute_stock(items, movs), body.get("cod"))
+        return _escribir_criticos(borrar)
+    if accion == "config":
+        return _escribir_criticos(lambda wb, items: cr.guardar_config(wb, body.get("campos") or {}))
+    return 400, dict(error="Acción desconocida.")
+
+
+def api_admin_oc_post(body):
+    accion = body.get("accion")
+    if accion == "nueva":
+        return _escribir_criticos(lambda wb, items: cr.guardar_oc(wb, items, body.get("campos") or {}, "Administración"))
+    if accion == "editar":
+        try:
+            fila = int(body.get("fila"))
+        except (TypeError, ValueError):
+            return 400, dict(error="Fila inválida.")
+        return _escribir_criticos(lambda wb, items: cr.guardar_oc(wb, items, body.get("campos") or {}, "Administración",
+                                                                   fila=fila, orig=body.get("orig") or {}))
+    return 400, dict(error="Acción desconocida.")
 
 
 def api_admin_anular(body):
@@ -736,20 +819,23 @@ def api_admin_anular(body):
             return 400, dict(error="Indicar el motivo.")
         if "Anulados" not in wb.sheetnames:
             an = wb.create_sheet("Anulados")
-            cm.style_header(an, cm.MOV_HEAD + ["Anulado el", "Motivo"], [11, 9, 9, 30, 9, 9, 10, 13, 22, 40, 16, 40])
+            cm.style_header(an, cm.MOV_HEAD[:10] + ["Anulado el", "Motivo", "Referencia"], [11, 9, 9, 30, 9, 9, 10, 13, 22, 40, 16, 40, 16])
         an = wb["Anulados"]
+        if not an.cell(row=1, column=13).value:          # hojas Anulados viejas: se suma la columna
+            an.cell(row=1, column=13).value = "Referencia"
         ra = cm.last_row(an) + 1
+        ref = ws.cell(row=r, column=cm.MOV_REF).value
         vals = [ws.cell(row=r, column=c).value for c in range(1, 11)]
         vals[3] = items.get(cod, {}).get("ins", "")
         vals[6] = cm.base_qty(items[cod], cm.num(vals[4]) or 0, cm.norm(vals[5])) if cod in items else None
-        for c, v in enumerate(vals + [dt.datetime.now(), motivo], start=1):
+        for c, v in enumerate(vals + [dt.datetime.now(), motivo, ref], start=1):
             an.cell(row=ra, column=c).value = v
-        cm.style_row(an, ra, 12)
+        cm.style_row(an, ra, 13)
         an.cell(row=ra, column=1).number_format = "dd/mm/yyyy"
         an.cell(row=ra, column=11).number_format = "dd/mm/yyyy hh:mm"
         ws.delete_rows(r)
         _reescribir_formulas_mov(ws, r)
-        ws.auto_filter.ref = f"A1:J{max(cm.last_row(ws), 2)}"
+        ws.auto_filter.ref = f"A1:K{max(cm.last_row(ws), 2)}"
         cm.rebuild_stock(wb)
         try:
             save_wb(wb)
@@ -851,6 +937,14 @@ class H(BaseHTTPRequestHandler):
                 nombre = "Informe_Inventario_" + (g("desde") or "inicio") + "_" + (g("hasta") or "hoy") + ".xlsx"
                 return self._send(200, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                   {"Content-Disposition": f'attachment; filename="{re.sub(r"[^A-Za-z0-9_.-]", "", nombre)}"'})
+            if path == "/api/admin/criticos":
+                return self._guard(api_admin_criticos_get)
+            if path == "/api/admin/criticos_excel":
+                wb, items, movs, st, _ = snapshot()
+                calc, cfg = _datos_criticos(wb, items, movs, st)
+                data = cr.exportar_xlsx(calc, cfg)
+                return self._send(200, data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                  {"Content-Disposition": f'attachment; filename="Insumos_criticos_{dt.date.today():%Y-%m-%d}.xlsx"'})
             if path == "/api/admin/backup_descargar":
                 nombre = parse_qs(urlparse(self.path).query).get("nombre", [""])[0]
                 p = os.path.join(BACKUPS, nombre)
@@ -917,6 +1011,10 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, dict(ok=True))
             if path == "/api/admin/backup":
                 return self._guard(api_admin_backup_post)
+            if path == "/api/admin/criticos":
+                return self._guard(api_admin_criticos_post, body)
+            if path == "/api/admin/oc":
+                return self._guard(api_admin_oc_post, body)
             if path == "/api/admin/foto":
                 return self._guard(api_admin_foto, body)
             if path == "/api/admin/salir":
@@ -973,6 +1071,13 @@ def main():
         time.sleep(3)
         return
     cm.asegurar_excel()
+    try:                                     # hojas de insumos críticos y columna Referencia (si faltan)
+        with LOCK:
+            wb = openpyxl.load_workbook(cm.XLSX)
+            if cr.asegurar_hojas(wb):
+                save_wb(wb)
+    except Exception as e:                   # Excel abierto u otro problema: se reintenta al usar la sección
+        print("Aviso: no se pudieron preparar las hojas de insumos críticos:", e)
     threading.Thread(target=ciclo_backup, daemon=True).start()
     print("=" * 60)
     print(" INVENTARIO BAJO SOPPALCO - servidor de carga")

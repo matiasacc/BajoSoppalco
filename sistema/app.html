@@ -122,6 +122,19 @@ input.scan{font-size:18px;padding:12px;border:2px solid var(--ac)}
 .lt input.qty{width:70px;text-align:right}
 .lt input[data-f=obs]{width:100%;min-width:120px}
 tr.flash td{animation:fl 1s ease-out}
+.ccont{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin:4px 0 12px}
+.ccont button{border:1px solid var(--ln);background:var(--bg);color:var(--fg);padding:8px;text-align:left;cursor:pointer;font:inherit}
+.ccont button b{display:block;font-size:22px;line-height:1.1}
+.ccont button span{font-size:12px;display:block;margin-top:5px}
+.ccont button.on{outline:2px solid var(--ac);outline-offset:-2px}
+.est{display:inline-block;padding:2px 7px;font-size:12px;font-weight:bold;white-space:nowrap}
+.e-QUIEBRE{background:#7b1e1e;color:#fff} .e-COMPRARYA{background:#d64545;color:#fff} .e-COMPRAR{background:#f0a050;color:#111}
+.e-ENCAMINO{background:#5b9bd5;color:#111} .e-ATENCIÓN{background:#ffe08a;color:#111} .e-OK{background:#8fc77a;color:#111}
+.ccont button[data-e] b{padding:0 4px;display:inline-block}
+.ct td.al{color:var(--err);font-size:12px}
+.ct td:first-child{white-space:nowrap}
+.ot select,.ot input[type=date]{margin:0;padding:4px;font-size:13px;width:auto}
+
 @keyframes fl{from{background:var(--sel)}to{background:transparent}}
 </style>
 </head>
@@ -210,6 +223,7 @@ tr.flash td{animation:fl 1s ease-out}
   <tbody id="lista"><tr><td colspan="6" class="mut">Vacía</td></tr></tbody>
  </table></div>
  <p id="lnota" class="mut" style="font-size:12px;margin:6px 0 0"></p>
+ <label id="lref" hidden style="max-width:360px;margin-top:10px">Nº de OC o remito de las entradas (opcional)<input id="cref" autocomplete="off" maxlength="40" placeholder="ej: OC 4512"></label>
 
  <div id="msg" class="msg"></div>
  <div class="bar" style="margin-top:10px"><button id="cargar" class="btn pri" type="button" disabled>Cargar al inventario</button>
@@ -239,6 +253,7 @@ tr.flash td{animation:fl 1s ease-out}
  <div id="adm" hidden>
    <div class="subnav">
      <button class="btn on" data-sub="inv" type="button">Inventario</button>
+     <button class="btn" data-sub="cri" type="button">Insumos críticos</button>
      <button class="btn" data-sub="maestro" type="button">Maestro</button>
      <button class="btn" data-sub="movs" type="button">Movimientos</button>
      <button class="btn" data-sub="pers" type="button">Personas</button>
@@ -261,9 +276,9 @@ tr.flash td{animation:fl 1s ease-out}
 
    <div id="s-movs" hidden>
      <div class="bar"><input id="vf" placeholder="Filtrar (fecha, código, insumo, persona...)" style="max-width:320px;margin:0">
-     <span class="mut">Últimos 300 que coinciden. Editar corrige E/S, cantidad, unidad o persona (la fecha no se cambia; queda anotado en Obs.). Anular pasa la fila a la hoja "Anulados".</span></div>
+     <span class="mut">Últimos 300 que coinciden. Editar corrige E/S, cantidad, unidad, persona o Nº de OC / remito (la fecha no se cambia; queda anotado en Obs.). Anular pasa la fila a la hoja "Anulados".</span></div>
      <div class="tw"><table>
-      <thead><tr><th>Fila</th><th>Fecha</th><th>E/S</th><th>Código</th><th>Insumo</th><th>Cant.</th><th>Unidad</th><th>Persona</th><th>Origen</th><th>Obs.</th><th></th></tr></thead>
+      <thead><tr><th>Fila</th><th>Fecha</th><th>E/S</th><th>Código</th><th>Insumo</th><th>Cant.</th><th>Unidad</th><th>Persona</th><th>Origen</th><th>Obs.</th><th>Nº OC / remito</th><th></th></tr></thead>
       <tbody id="vt"></tbody>
      </table></div>
    </div>
@@ -295,6 +310,65 @@ tr.flash td{animation:fl 1s ease-out}
        <a id="expInv" class="btn" href="#">Descargar Excel</a>
      </div>
      <iframe id="ifr" title="Inventario"></iframe>
+   </div>
+
+   <div id="s-cri" hidden>
+     <div class="bar">
+       <div id="cvis" class="chips" role="group" aria-label="Vista">
+         <button data-v="panel" class="on" type="button">Panel</button>
+         <button data-v="oc" type="button">Órdenes de compra</button>
+         <button data-v="par" type="button">Parámetros</button>
+       </div>
+       <span id="choy" class="mut"></span>
+       <a id="cexcel" class="btn" href="#">Descargar Excel</a>
+     </div>
+
+     <div id="cv-panel">
+       <div id="ccont" class="ccont"></div>
+       <div class="bar filtros">
+         <label>Estado<select id="cfest"><option value="">Todos</option></select></label>
+         <label>Buscar<input id="cfbus" placeholder="Código o descripción" autocomplete="off"></label>
+       </div>
+       <div class="tw"><table class="ct">
+        <thead><tr><th>Código</th><th>Descripción</th><th>Stock actual</th><th>Consumo semanal</th><th>Cobertura<br>(días háb.)</th><th>Punto de pedido</th>
+        <th>OC pendientes</th><th>Disponible proyectado</th><th>Estado</th><th>Cantidad sugerida</th><th>Pedir antes de</th><th>Quiebre estimado</th><th>Alertas</th><th></th></tr></thead>
+        <tbody id="ctb"></tbody>
+       </table></div>
+       <p id="cnota" class="mut" style="font-size:12px"></p>
+     </div>
+
+     <div id="cv-oc" hidden>
+       <div class="bar filtros">
+         <label>Mostrar<select id="cofil"><option value="abiertas">Abiertas (en curso y atrasadas)</option><option value="">Todas</option></select></label>
+         <span class="mut">La recepción se calcula sola: al cargar la ENTRADA, escribir el mismo Nº de OC en <i>Nº de OC o remito</i>.</span>
+       </div>
+       <div class="tw"><table class="mt ot">
+        <thead><tr><th>Nº OC / Requi</th><th>Insumo</th><th>Fecha emisión</th><th>Cantidad pedida</th><th>Unidad</th><th>Fecha prometida<br>(opcional)</th>
+        <th>Fecha prevista</th><th>Recibido</th><th>Pendiente</th><th>Estado</th><th>Atraso<br>(días háb.)</th><th>Observaciones</th><th></th></tr></thead>
+        <tbody id="cot"></tbody>
+       </table></div>
+       <p class="mut" style="font-size:12px">Cantidades en unidad base (si se elige el empaque, se convierte sola). Fecha prevista = la prometida o, si está vacía, la de emisión + lead time del insumo.
+       Una OC que no va más se marca como <b>Anulada</b> (no se borra).</p>
+     </div>
+
+     <div id="cv-par" hidden>
+       <div class="card" style="max-width:860px;margin:0 0 12px">
+         <b>Parámetros generales</b>
+         <div class="grid" style="margin-top:6px">
+           <label>Semanas de historial<input id="cg-semanas" inputmode="numeric"></label>
+           <label>Días hábiles por semana<input id="cg-dias_semana" inputmode="numeric"></label>
+           <label>Margen de pre-alerta (%)<input id="cg-margen" inputmode="decimal"></label>
+           <label>Días a cubrir por defecto<input id="cg-dias_cubrir" inputmode="decimal"></label>
+         </div>
+         <button id="cgsave" class="btn pri" type="button">Guardar parámetros generales</button>
+       </div>
+       <div class="tw"><table class="mt">
+        <thead><tr><th>Código</th><th>Insumo</th><th>Unidad</th><th>Proveedor</th><th>Lead time<br>(días háb.)</th><th>Stock mínimo fijo</th><th>Seguridad<br>(días de consumo)</th>
+        <th>Múltiplo de compra</th><th>Consumo semanal<br>inicial (opcional)</th><th>Días a cubrir<br>(vacío = general)</th><th>Observaciones</th><th></th></tr></thead>
+        <tbody id="cpt"></tbody>
+       </table></div>
+       <p class="mut" style="font-size:12px">Cantidades en la unidad base del insumo (la misma del stock). El consumo semanal inicial se usa solo mientras no haya salidas en el período. Hasta <span id="cmax">50</span> insumos.</p>
+     </div>
    </div>
 
    <div id="s-etiq" hidden>
@@ -566,6 +640,7 @@ function excede(cod){   // salida total en la lista > stock registrado
 }
 /* ---- lista editable ---- */
 function renderLista(flash){
+  $("lref").hidden = !lista.some(l => l.tipo === "ENTRADA");
   $("nl").textContent = lista.length;
   $("cargar").disabled = !lista.length;
   let hayExc = false;
@@ -601,10 +676,10 @@ $("vaciar").onclick = () => { if(lista.length && confirm("¿Vaciar la lista sin 
 $("cargar").onclick = async () => {
   if(!USR){ salir("vencida"); return; }
   $("cargar").disabled = true; msg($("msg"), "Cargando…");
-  const r = await api("/api/movimientos", {lineas: lista.map(l => ({tipo:l.tipo==="ENTRADA"?"E":"S", cod:l.cod, cant:String(l.cant), unidad:l.unidad, obs:l.obs}))});
+  const r = await api("/api/movimientos", {lineas: lista.map(l => ({tipo:l.tipo==="ENTRADA"?"E":"S", cod:l.cod, cant:String(l.cant), unidad:l.unidad, obs:l.obs, ref:l.tipo==="ENTRADA" ? $("cref").value.trim() : ""}))});
   if(r.ok){
     msg($("msg"), r.d.pendiente ? `${nMov(r.d.ok)} en espera (el Excel está abierto). Se pasan solos al Excel cuando se cierre.` : `Listo: ${nMov(r.d.ok)} ${r.d.ok===1?"cargado":"cargados"} a nombre de ${esc(USR.nombre)}${USR.nombre.endsWith(".")?"":"."}`, r.d.pendiente ? "warn" : "ok");
-    lista = []; store.set("lista", lista); msg($("smsg"), ""); await cargarDatos(); $("scan").focus();
+    lista = []; store.set("lista", lista); $("cref").value = ""; msg($("smsg"), ""); await cargarDatos(); $("scan").focus();
   }else if(r.status === 401){
     salir("vencida");
   }else{
@@ -705,10 +780,11 @@ $("pw").onkeydown = e => { if(e.key==="Enter") $("entrar").click(); };
 $("salir").onclick = async () => { cerrarClave(); await api("/api/admin/salir", {}); sess.set(""); showLogin(); };
 document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = () => {
   document.querySelectorAll(".subnav button[data-sub]").forEach(x => x.classList.toggle("on", x===b));
-  ["inv","maestro","movs","pers","etiq","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
+  ["inv","cri","maestro","movs","pers","etiq","cuenta"].forEach(s => $("s-"+s).hidden = (s!==b.dataset.sub));
   msg($("amsg"), "");
   if(b.dataset.sub==="inv"){ llenarSectores(); $("ifr").src = urlInv(); }
   if(b.dataset.sub==="maestro") loadMaestro();
+  if(b.dataset.sub==="cri") loadCriticos();
   if(b.dataset.sub==="movs") loadMovs();
   if(b.dataset.sub==="pers") loadPers();
   if(b.dataset.sub==="cuenta") loadBackups();
@@ -866,13 +942,186 @@ $("eimprimir").onclick = () => {
   w.document.open(); w.document.write(htmlEtiquetas(items, +$("etam").value)); w.document.close();
 };
 
+/* ---------------- INSUMOS CRÍTICOS ---------------- */
+let CR = null, CVIS = "panel";
+const ESTADOS_CR = ["QUIEBRE","COMPRAR YA","COMPRAR","EN CAMINO","ATENCIÓN","OK"];
+const estCls = e => "est e-" + String(e).replace(/ /g, "");
+const f1 = x => (x === null || x === undefined || x === "") ? "" : fmt(Math.round(x * 10) / 10);
+const OC_EST = {"Atrasada":"COMPRARYA", "En curso":"ENCAMINO", "Recibida":"OK", "Anulada":""};
+async function loadCriticos(){
+  const r = await api("/api/admin/criticos"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
+  CR = r.d;
+  $("choy").textContent = `Fecha de referencia: hoy ${CR.hoy}`;
+  $("cmax").textContent = CR.max;
+  if(!$("cfest").options[1]) $("cfest").innerHTML += ESTADOS_CR.map(e => `<option>${e}</option>`).join("");
+  ["semanas","dias_semana","margen","dias_cubrir"].forEach(k => $("cg-"+k).value = CR.cfg[k]);
+  renderCrPanel(); renderCrOC(); renderCrPar();
+}
+function setCVis(v){
+  CVIS = v;
+  document.querySelectorAll("#cvis button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  ["panel","oc","par"].forEach(x => $("cv-"+x).hidden = x !== v);
+}
+document.querySelectorAll("#cvis button").forEach(b => b.onclick = () => setCVis(b.dataset.v));
+$("cexcel").onclick = e => { e.preventDefault(); location.href = `/api/admin/criticos_excel?token=${encodeURIComponent(sess.get())}&t=${Date.now()}`; };
+
+function renderCrPanel(){
+  const c = CR.contadores, fe = $("cfest").value;
+  $("ccont").innerHTML = ESTADOS_CR.map(e => `<button data-e="${e}" class="${fe===e?"on":""}" type=button><b class="${estCls(e)}">${c[e]}</b><span>${e}</span></button>`).join("")
+    + `<button data-v="oc" type=button><b style="${c["OC atrasadas"]?"color:var(--err)":""}">${c["OC atrasadas"]}</b><span>OC atrasadas</span></button>`;
+  $("ccont").querySelectorAll("button[data-e]").forEach(b => b.onclick = () => { $("cfest").value = $("cfest").value === b.dataset.e ? "" : b.dataset.e; renderCrPanel(); });
+  $("ccont").querySelector("button[data-v]").onclick = () => { setCVis("oc"); $("cofil").value = "abiertas"; renderCrOC(); };
+  const rows = CR.filas.filter(f => (!fe || f.estado === fe) && hasAll(f.cod + " " + f.ins, $("cfbus").value));
+  $("ctb").innerHTML = rows.map(f => {
+    const sinDatos = f.stock === null || f.stock === undefined;
+    const cob = sinDatos ? "" : (f.cob === null ? "sin consumo" : f1(f.cob));
+    return `<tr><td><b>${esc(f.cod)}</b></td><td>${esc(f.ins)}${f.prov?`<br><span class=mut style="font-size:12px">${esc(f.prov)}</span>`:""}</td>
+      <td class=n>${sinDatos?"":f1(f.stock)+" "+esc(plural(f.ub, f.stock))}</td><td class=n>${f1(f.sem)}</td><td class=n>${cob}</td><td class=n>${f1(f.pp)}</td>
+      <td class=n>${f.ocp?f1(f.ocp):""}</td><td class=n>${f1(f.disp)}</td><td class=c><span class="${estCls(f.estado)}">${esc(f.estado)}</span></td>
+      <td class=n><b>${f.sugerida?fmt(f.sugerida):""}</b></td><td class=c>${f.antes==="YA"?"<b>YA</b>":esc(f.antes||"")}</td><td class=c>${esc(f.quiebre||"")}</td>
+      <td class=al>${esc(f.alertas||"")}</td>
+      <td>${f.sugerida?`<button class="btn sm" data-oc="${esc(f.cod)}" data-q="${f.sugerida}" type=button>Cargar OC</button>`:""}</td></tr>`;
+  }).join("") || `<tr><td colspan=14 class=mut>${CR.filas.length ? "Sin resultados con ese filtro." : "Todavía no hay insumos críticos: agregarlos en <b>Parámetros</b>."}</td></tr>`;
+  $("ctb").querySelectorAll("button[data-oc]").forEach(b => b.onclick = () => { setCVis("oc"); renderCrOC({cod:b.dataset.oc, cant:b.dataset.q}); });
+  $("cnota").innerHTML = `Consumo semanal = salidas de las últimas ${CR.cfg.semanas} semanas / ${fmt(CR.semanas_usadas)}`
+    + (CR.semanas_usadas < CR.cfg.semanas ? ` (el programa tiene menos de ${CR.cfg.semanas} semanas de movimientos: se divide por las semanas que pasaron)` : "")
+    + `. Cantidades en unidad base. Días hábiles: lunes a viernes. Cantidad sugerida redondeada al múltiplo de compra.`;
+}
+$("cfest").onchange = renderCrPanel; $("cfbus").oninput = renderCrPanel;
+
+function critOpts(sel){
+  const crit = new Set(CR.filas.map(f => f.cod));
+  return CR.insumos.filter(i => crit.has(i.cod)).map(i => `<option value="${esc(i.cod)}" ${i.cod===sel?"selected":""}>${esc(i.cod)} · ${esc(i.ins)}</option>`).join("");
+}
+function insumo(cod){ return CR.insumos.find(i => i.cod === cod); }
+function uniOptsCr(i){ return i ? uniOpts(i) : ""; }
+function aBase(i, cant, uni){
+  if(!i) return cant;
+  if(i.emp && uni === i.emp) return i.fac ? cant * i.fac : null;
+  if(i.emp2 && uni === i.emp2) return i.fac2 ? cant * i.fac2 : null;
+  return cant;
+}
+function renderCrOC(pre){
+  const fil = $("cofil").value;
+  const crit = CR.filas.length;
+  const i0 = pre ? insumo(pre.cod) : null;
+  let h = crit ? `<tr class="dirty" data-nueva><td><input data-x=nro placeholder="Nº OC" maxlength="30" style="min-width:90px"></td>
+    <td><select data-x=cod><option value="">Elegir insumo…</option>${critOpts(pre && pre.cod)}</select></td>
+    <td><input data-x=fecha type=date value="${hoyISO()}" max="${hoyISO()}"></td>
+    <td><input data-x=cant class=n inputmode="decimal" value="${pre ? pre.cant : ""}" placeholder="Cant."></td>
+    <td><select data-x=uni>${uniOptsCr(i0)}</select></td>
+    <td><input data-x=prom type=date></td><td colspan=5 class=mut data-x=hint style="font-size:12px"></td>
+    <td><input data-x=obs placeholder="—" class=o></td>
+    <td><button class="btn sm pri" data-add type=button>Agregar</button></td></tr>`
+    : `<tr><td colspan=13 class=mut>Primero agregar los insumos críticos en <b>Parámetros</b>.</td></tr>`;
+  const ocs = CR.ocs.filter(o => !fil || o.estado === "En curso" || o.estado === "Atrasada");
+  h += ocs.map(o => `<tr data-fila="${o.fila}"><td><b>${esc(o.nro)}</b></td><td>${esc(o.cod)} · ${esc(o.ins)}</td><td class=c>${o.fecha}</td>
+     <td class=n>${fmt(o.cant)}</td><td>${esc((insumo(o.cod)||{}).ub||"")}</td><td class=c>${o.prom}</td><td class=c>${o.prev}</td>
+     <td class=n>${fmt(o.recibido)}</td><td class=n>${o.pendiente?fmt(o.pendiente):""}</td>
+     <td class=c>${OC_EST[o.estado] ? `<span class="est e-${OC_EST[o.estado]}">${o.estado}</span>` : `<span class=mut>${o.estado}</span>`}</td>
+     <td class=n>${o.atraso ?? ""}</td><td>${esc(o.obs)}</td><td><button class="btn sm" data-ed="${o.fila}" type=button>Editar</button></td></tr>`).join("");
+  if(crit && !ocs.length) h += `<tr><td colspan=13 class=mut>${fil ? "No hay OC abiertas." : "Todavía no hay OC cargadas."}</td></tr>`;
+  $("cot").innerHTML = h;
+  const nv = $("cot").querySelector("tr[data-nueva]");
+  if(nv){
+    const g = k => nv.querySelector(`[data-x=${k}]`);
+    const hint = () => {
+      const i = insumo(g("cod").value), q = parseFloat((g("cant").value || "").replace(",", "."));
+      if(!i){ g("hint").textContent = ""; return; }
+      const f = CR.filas.find(f => f.cod === i.cod);
+      const b = q > 0 ? aBase(i, q, g("uni").value) : null;
+      g("hint").textContent = (b !== null && q > 0 && g("uni").value !== i.ub ? `= ${fmt(b)} ${plural(i.ub, b)} · ` : "") + `Lead time ${f && f.lt !== null ? f.lt : "?"} días háb.` + (f && f.sugerida ? ` · sugerido ${fmt(f.sugerida)} ${plural(i.ub, f.sugerida)}` : "");
+    };
+    g("cod").onchange = () => { g("uni").innerHTML = uniOptsCr(insumo(g("cod").value)); hint(); };
+    g("cant").oninput = hint; g("uni").onchange = hint; hint();
+    if(pre) g("nro").focus();
+    nv.querySelector("[data-add]").onclick = async () => {
+      const i = insumo(g("cod").value), q = parseFloat((g("cant").value || "").replace(",", "."));
+      if(!i){ msg($("amsg"), "Elegir el insumo.", "err"); return; }
+      const b = q > 0 ? aBase(i, q, g("uni").value) : q;
+      if(b === null){ msg($("amsg"), "Ese empaque no tiene cantidad definida en el Maestro: cargar la OC en unidad base.", "err"); return; }
+      const r = await api("/api/admin/oc", {accion:"nueva", campos:{nro:g("nro").value, cod:i.cod, fecha:g("fecha").value, cant:String(b), prom:g("prom").value, obs:g("obs").value}});
+      msg($("amsg"), r.ok ? "OC registrada." : esc(r.d.error), r.ok ? "ok" : "err");
+      if(r.ok) loadCriticos();
+    };
+  }
+  $("cot").querySelectorAll("button[data-ed]").forEach(b => b.onclick = () => editarOC(b.closest("tr"), CR.ocs.find(o => o.fila === +b.dataset.ed)));
+}
+$("cofil").onchange = () => renderCrOC();
+function editarOC(tr, o){
+  tr.classList.add("dirty");
+  tr.innerHTML = `<td><input data-x=nro value="${esc(o.nro)}" maxlength="30"></td><td><select data-x=cod>${critOpts(o.cod)}</select></td>
+    <td><input data-x=fecha type=date value="${o.fecha_iso}" max="${hoyISO()}"></td><td><input data-x=cant class=n inputmode="decimal" value="${o.cant}"></td>
+    <td>${esc((insumo(o.cod)||{}).ub||"")}</td><td><input data-x=prom type=date value="${o.prom_iso}"></td><td colspan=3></td>
+    <td class=c><label style="margin:0;font-size:12px;white-space:nowrap"><input data-x=anu type=checkbox ${o.anulada?"checked":""} style="display:inline;width:auto;margin:0 4px 0 0">Anulada</label></td><td></td>
+    <td><input data-x=obs value="${esc(o.obs)}" class=o></td>
+    <td style="white-space:nowrap"><button class="btn sm pri" data-ok type=button>Guardar</button> <button class="btn sm" data-no type=button>Cancelar</button></td>`;
+  const g = k => tr.querySelector(`[data-x=${k}]`);
+  tr.querySelector("[data-no]").onclick = () => renderCrOC();
+  tr.querySelector("[data-ok]").onclick = async () => {
+    const r = await api("/api/admin/oc", {accion:"editar", fila:o.fila, orig:{nro:o.nro, cod:o.cod},
+      campos:{nro:g("nro").value, cod:g("cod").value, fecha:g("fecha").value, cant:g("cant").value, prom:g("prom").value, obs:g("obs").value, anulada:g("anu").checked}});
+    msg($("amsg"), r.ok ? `OC ${esc(g("nro").value)} actualizada.` : esc(r.d.error), r.ok ? "ok" : "err");
+    if(r.ok) loadCriticos();
+  };
+}
+
+const CP = [["prov","o"],["lt","n"],["min","n"],["seg","n"],["mult","n"],["ini","n"],["dcub","n"],["obs","o"]];
+const CPH = {prov:"Proveedor", lt:"días", min:"un.", seg:"días", mult:"1", ini:"—", dcub:String(15), obs:"—"};
+function renderCrPar(){
+  const crit = new Set(CR.filas.map(f => f.cod));
+  const libres = CR.insumos.filter(i => !crit.has(i.cod));
+  const inp = (k, v, cls, ph) => `<td><input data-f="${k}" class="${cls}" value="${esc(v ?? "")}" ${ph ? `placeholder="${k==="dcub" ? CR.cfg.dias_cubrir : CPH[k]}"` : ""} ${cls==="n"?'inputmode="decimal"':""}></td>`;
+  let h = CR.filas.length < CR.max ? `<tr class="dirty" data-nuevo><td colspan=3><select data-f=cod style="margin:0;padding:4px;width:100%"><option value="">Agregar insumo del Maestro…</option>${libres.map(i => `<option value="${esc(i.cod)}">${esc(i.cod)} · ${esc(i.ins)}</option>`).join("")}</select></td>`
+     + CP.map(([k, c]) => inp(k, "", c, true)).join("") + `<td><button class="btn sm pri" data-add type=button>Agregar</button></td></tr>` : "";
+  h += [...CR.filas].sort((a, b) => a.cod.localeCompare(b.cod)).map(f => `<tr data-c="${esc(f.cod)}"><td><b>${esc(f.cod)}</b></td><td>${esc(f.ins)}</td><td>${esc(f.ub)}</td>`
+     + CP.map(([k, c]) => inp(k, f[k], c, k === "dcub")).join("")
+     + `<td style="white-space:nowrap"><button class="btn sm" data-g disabled type=button>Guardar</button> <button class="btn sm" data-b type=button>Quitar</button></td></tr>`).join("");
+  $("cpt").innerHTML = h;
+  const datos = tr => Object.fromEntries(CP.map(([k]) => [k, tr.querySelector(`[data-f=${k}]`).value]));
+  const nv = $("cpt").querySelector("tr[data-nuevo]");
+  if(nv){
+    nv.querySelector("[data-f=cod]").onchange = e => {    // propone el stock mínimo que ya tiene el Maestro
+      const i = insumo(e.target.value), m = nv.querySelector("[data-f=min]");
+      if(i && i.min !== null && i.min !== undefined && !m.value) m.value = i.min;
+    };
+    nv.querySelector("[data-add]").onclick = async () => {
+      const cod = nv.querySelector("[data-f=cod]").value;
+      if(!cod){ msg($("amsg"), "Elegir el insumo.", "err"); return; }
+      const r = await api("/api/admin/criticos", {accion:"guardar", cod, campos:datos(nv)});
+      msg($("amsg"), r.ok ? `${esc(cod)} agregado a críticos.` : esc(r.d.error), r.ok ? "ok" : "err");
+      if(r.ok) loadCriticos();
+    };
+  }
+  $("cpt").querySelectorAll("tr[data-c]").forEach(tr => {
+    tr.querySelectorAll("input").forEach(i => i.oninput = () => { tr.classList.add("dirty"); tr.querySelector("[data-g]").disabled = false; });
+    tr.querySelector("[data-g]").onclick = async () => {
+      const r = await api("/api/admin/criticos", {accion:"guardar", cod:tr.dataset.c, campos:datos(tr)});
+      msg($("amsg"), r.ok ? `${esc(tr.dataset.c)} guardado.` : esc(r.d.error), r.ok ? "ok" : "err");
+      if(r.ok) loadCriticos();
+    };
+    tr.querySelector("[data-b]").onclick = async () => {
+      if(!confirm(`¿Quitar ${tr.dataset.c} de los insumos críticos? (no se borra del Maestro ni sus movimientos)`)) return;
+      const r = await api("/api/admin/criticos", {accion:"borrar", cod:tr.dataset.c});
+      msg($("amsg"), r.ok ? `${esc(tr.dataset.c)} quitado de críticos.` : esc(r.d.error), r.ok ? "ok" : "err");
+      if(r.ok) loadCriticos();
+    };
+  });
+}
+$("cgsave").onclick = async () => {
+  const campos = Object.fromEntries(["semanas","dias_semana","margen","dias_cubrir"].map(k => [k, $("cg-"+k).value]));
+  const r = await api("/api/admin/criticos", {accion:"config", campos});
+  msg($("amsg"), r.ok ? "Parámetros generales guardados." : esc(r.d.error), r.ok ? "ok" : "err");
+  if(r.ok) loadCriticos();
+};
+
 async function loadMovs(){
   const r = await api("/api/admin/movimientos"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
   V = r.d.movs; renderMovs();
 }
 function renderMovs(){
-  const rows = V.filter(m => hasAll([m.fecha,m.cod,m.ins,m.persona,m.origen,m.obs].join(" "), $("vf").value)).slice(0,300);
-  $("vt").innerHTML = rows.map(m => `<tr><td class=c>${m.fila??"pend."}</td><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td><td class=mut>${esc(m.origen)}</td><td>${esc(m.obs)}</td><td style="white-space:nowrap">${m.fila?`<button class="btn sm" data-e="${m.fila}" type="button">Editar</button> <button class="btn sm" data-f="${m.fila}" data-c="${esc(m.cod)}" data-q="${m.cant}" type="button">Anular</button>`:""}</td></tr>`).join("") || `<tr><td colspan=11 class=mut>Sin resultados</td></tr>`;
+  const rows = V.filter(m => hasAll([m.fecha,m.cod,m.ins,m.persona,m.origen,m.obs,m.ref].join(" "), $("vf").value)).slice(0,300);
+  $("vt").innerHTML = rows.map(m => `<tr><td class=c>${m.fila??"pend."}</td><td>${m.fecha}</td><td class=c>${m.tipo==="ENTRADA"?"E":"S"}</td><td>${esc(m.cod)}</td><td>${esc(m.ins)}</td><td class=n>${fmt(m.cant)}</td><td>${esc(m.unidad)}</td><td>${esc(m.persona)}</td><td class=mut>${esc(m.origen)}</td><td>${esc(m.obs)}</td><td>${esc(m.ref)}</td><td style="white-space:nowrap">${m.fila?`<button class="btn sm" data-e="${m.fila}" type="button">Editar</button> <button class="btn sm" data-f="${m.fila}" data-c="${esc(m.cod)}" data-q="${m.cant}" type="button">Anular</button>`:""}</td></tr>`).join("") || `<tr><td colspan=12 class=mut>Sin resultados</td></tr>`;
   $("vt").querySelectorAll("button[data-e]").forEach(b => b.onclick = () => editarMov(b.closest("tr"), V.find(m => m.fila === +b.dataset.e)));
   $("vt").querySelectorAll("button[data-f]").forEach(b => b.onclick = async () => {
     const motivo = prompt(`Anular fila ${b.dataset.f} (${b.dataset.c}). Motivo:`);
@@ -894,13 +1143,14 @@ function editarMov(tr, m){
    <td><select data-x=unidad style="margin:0;padding:4px">${uniOpts(i)}</select></td>
    <td><input data-x=persona value="${esc(m.persona)}" style="margin:0;padding:4px"></td>
    <td class=mut>${esc(m.origen)}</td><td><input data-x=obs value="${esc(m.obs)}" style="margin:0;padding:4px"></td>
+   <td><input data-x=ref value="${esc(m.ref||"")}" maxlength="40" placeholder="—" style="margin:0;padding:4px;width:110px"></td>
    <td style="white-space:nowrap"><button class="btn sm pri" data-ok type=button>Guardar</button> <button class="btn sm" data-no type=button>Cancelar</button></td>`;
   const u = tr.querySelector("[data-x=unidad]"); u.value = [...u.options].some(o => o.value===m.unidad) ? m.unidad : i.ub;
   tr.querySelector("[data-no]").onclick = renderMovs;
   tr.querySelector("[data-ok]").onclick = async () => {
     const g = k => tr.querySelector(`[data-x=${k}]`).value.trim();
     const r = await api("/api/admin/editar_mov", {fila:m.fila, cod:m.cod, cant_orig:m.cant,
-      campos:{fecha:m.fecha, tipo:g("tipo"), cant:g("cant"), unidad:g("unidad"), persona:g("persona"), obs:g("obs")}});
+      campos:{fecha:m.fecha, tipo:g("tipo"), cant:g("cant"), unidad:g("unidad"), persona:g("persona"), obs:g("obs"), ref:g("ref")}});
     msg($("amsg"), r.ok ? `Fila ${m.fila} corregida.` : esc(r.d.error), r.ok ? "ok" : "err");
     if(r.ok){ await loadMovs(); cargarDatos(); }
   };

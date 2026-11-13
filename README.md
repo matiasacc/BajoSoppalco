@@ -6,6 +6,7 @@ Programa de control de inventario para el depósito Bajo Soppalco.
 - Ingreso por **legajo y contraseña**; cada movimiento queda registrado a nombre de quien ingresó, con fecha y hora automáticas.
 - Stock en unidades y en empaques (cajas cerradas + sueltas), alertas de stock mínimo e informe de consumo.
 - Administración con contraseña: maestro de insumos, personas, corrección y anulación de movimientos.
+- **Insumos críticos**: punto de pedido, cobertura y cantidad sugerida por insumo, registro de órdenes de compra (la recepción se toma de las entradas con el mismo Nº de OC) y descarga del panel en Excel.
 - Los datos se guardan en un Excel (`datos/Inventario_Bajo_Soppalco.xlsx`).
 
 Una PC funciona como servidor web interno (HTTP, puerto 8080) y las demás PCs de la red acceden con el navegador, sin instalar nada.

@@ -111,6 +111,7 @@ a la derecha, la <b>lista a cargar</b>. Rojo: sin stock. Amarillo: bajo mínimo.
  <li><b>Buscar:</b> escribir parte del nombre o código y Enter abre el primero que aparece.</li>
  </ul></li>
 <li>Para corregir: en la lista se cambia la <b>cantidad</b>, la <b>unidad</b> (ej. <i>Caja</i>) o <b>E/S</b>, o se quita el renglón (✕).</li>
+<li>Si hay <b>entradas</b>, aparece el campo <b>Nº de OC o remito</b> (opcional): escribir el Nº de la orden de compra con que llegó el material. Así la OC se da por recibida sola en <i>Insumos críticos</i>.</li>
 <li><b>Cargar al inventario</b>. Queda registrado a nombre de quien ingresó.</li>
 </ol>
 <p class="small">Insumos sin foto se muestran con sus iniciales. Las fotos se suben desde Administración → Maestro.</p>
@@ -130,9 +131,10 @@ a la derecha, la <b>lista a cargar</b>. Rojo: sin stock. Amarillo: bajo mínimo.
 consumo por insumo y por sector, <b>salidas por mes</b> (últimos 6 meses, para comparar), stock actual, retiros por persona y movimientos del período.
 <b>Descargar Excel</b> baja ese mismo informe como planilla.
 <b>Rojo</b>: sin stock o negativo. <b>Amarillo</b>: en o por debajo del stock mínimo (columna <i>Stock mínimo</i> del Maestro, en unidad base). Los mismos colores se ven en el Maestro, al cargar y en la hoja Stock del Excel.</td></tr>
+<tr><td>Insumos críticos</td><td>Seguimiento de los insumos cuya falta frena la producción: avisa cuándo emitir una orden de compra y cuánto pedir. Ver punto 7.</td></tr>
 <tr><td>Maestro</td><td>Alta / edición de insumos: unidad base, empaques y cantidades, stock inicial, mínimo, <b>código de barras</b>. Borrar solo si no tiene movimientos.
 Columna <b>Foto</b>: <i>Subir</i> una foto (se achica sola); ✕ la quita.</td></tr>
-<tr><td>Movimientos</td><td><b>Editar</b> (E/S, cantidad, unidad, persona; queda anotado) o <b>Anular</b> (pasa a la hoja <i>Anulados</i> con motivo).</td></tr>
+<tr><td>Movimientos</td><td><b>Editar</b> (E/S, cantidad, unidad, persona, Nº de OC / remito; queda anotado) o <b>Anular</b> (pasa a la hoja <i>Anulados</i> con motivo).</td></tr>
 <tr><td>Personas</td><td>Alta con legajo y nombre; <b>Definir contraseña</b> (la escribe la persona en campos ocultos, el administrador no la ve); desactivar o borrar.</td></tr>
 <tr><td>Etiquetas</td><td>Elegir insumos y cuántos por hoja (1, 4, 6 o 12) → se abre la hoja A4 con nombre, foto y código de barras.
 Imprimir, o elegir <i>Guardar como PDF</i> en la impresora, para la carpeta del depósito o para pegar en estantes.</td></tr>
@@ -142,7 +144,35 @@ Imprimir, o elegir <i>Guardar como PDF</i> en la impresora, para la carpeta del 
 Contraseña de una persona olvidada: Administración → Personas → <i>Cambiar</i>, y la persona escribe una nueva.
 Contraseña de Administración olvidada: borrar <code>sistema\config_inventario.json</code> → vuelve a ser <code>soppalco</code>.</p>
 
-<h2>7. Lectora y etiquetas</h2>
+<h2>7. Insumos críticos</h2>
+<p>Administración → <b>Insumos críticos</b>. Tres vistas: <b>Panel</b>, <b>Órdenes de compra</b> y <b>Parámetros</b>. Solo lee los movimientos y el stock del programa; no los modifica.
+Todas las cantidades van en la <b>unidad base</b> del insumo. Días hábiles: lunes a viernes. La fecha de referencia es siempre hoy.</p>
+<ol>
+<li><b>Parámetros</b>: agregar cada insumo crítico (hasta 50, tienen que existir en el Maestro) con lead time (días hábiles), stock mínimo fijo, seguridad (días de consumo),
+múltiplo de compra y, opcionales, consumo semanal inicial estimado y días a cubrir por pedido. Arriba, los parámetros generales: semanas de historial (4), días hábiles por semana (5),
+margen de pre-alerta (20 %) y días a cubrir por defecto (15).</li>
+<li><b>Panel</b>: un renglón por insumo, ordenado por urgencia, con contadores por estado (tocar uno filtra) y la cantidad de OC atrasadas.
+Si hay que comprar, muestra la <b>cantidad sugerida</b> y el botón <b>Cargar OC</b>, que abre la orden ya completada.</li>
+<li><b>Órdenes de compra</b>: registrar Nº de OC o requisición, insumo, fecha de emisión, cantidad (se puede elegir el empaque y se convierte sola) y, si se conoce, la fecha prometida.
+Lo recibido se calcula solo con las entradas que tengan ese mismo Nº en <i>Nº de OC o remito</i>. Una OC que no va más se marca <b>Anulada</b> desde <i>Editar</i>.</li>
+<li><b>Descargar Excel</b>: baja el panel, las OC y los parámetros.</li>
+</ol>
+<table>
+<tr><th style="width:22%">Estado</th><th>Cuándo</th></tr>
+<tr><td><b>QUIEBRE</b></td><td>Stock en 0 o menos.</td></tr>
+<tr><td><b>COMPRAR YA</b></td><td>Stock en o bajo el punto de pedido, sin OC que lo cubra, y la cobertura no llega al lead time.</td></tr>
+<tr><td><b>COMPRAR</b></td><td>Stock en o bajo el punto de pedido, sin OC que lo cubra.</td></tr>
+<tr><td><b>EN CAMINO</b></td><td>Stock en o bajo el punto de pedido, pero con OC pendientes que lo superan.</td></tr>
+<tr><td><b>ATENCIÓN</b></td><td>Stock hasta un 20 % (margen) por encima del punto de pedido.</td></tr>
+<tr><td><b>OK</b></td><td>El resto.</td></tr>
+</table>
+<p class="small">Consumo semanal = salidas de las últimas N semanas / N (si no hubo salidas, el consumo inicial estimado). Mientras el programa tenga menos de N semanas de movimientos,
+se divide por las semanas que realmente pasaron. Consumo diario = semanal / días hábiles por semana. Cobertura = stock / consumo diario.
+Punto de pedido = el mayor entre el stock mínimo fijo y consumo diario × (lead time + seguridad). Disponible proyectado = stock + OC pendientes.
+Cantidad sugerida = punto de pedido + consumo diario × días a cubrir − disponible proyectado, redondeada hacia arriba al múltiplo de compra.
+Pedir antes de = hoy + (cobertura − lead time) días hábiles. OC: fecha prevista = la prometida o emisión + lead time; atrasada si la prevista ya pasó (atraso en días hábiles).</p>
+
+<h2>8. Lectora y etiquetas</h2>
 <ul>
 <li>Lectora <b>2D inalámbrica</b> con base USB, modo <b>teclado (HID)</b>, que agregue <b>Enter</b> al final de cada lectura (configuración de fábrica habitual).</li>
 <li>Cada etiqueta lleva el <b>código del insumo</b> (ej. <code>CIN-01</code>) o el valor cargado en la columna <i>Código de barras</i> del Maestro.
@@ -151,7 +181,7 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 <li>Sin lectora se puede probar escribiendo el código en <i>Escanear código</i> y Enter.</li>
 </ul>
 
-<h2>8. Actualizar a una versión nueva</h2>
+<h2>9. Actualizar a una versión nueva</h2>
 <ol>
 <li>Ejecutar <code>Desinstalar.bat</code> (cierra el programa).</li>
 <li><b>Guardar aparte</b>, fuera de la carpeta del programa:
@@ -165,14 +195,14 @@ Formato recomendado: <b>Code 128</b> o QR.</li>
 </ol>
 <p class="small">Con <i>git</i> es más simple: <code>Desinstalar.bat</code> → <code>git pull</code> → <code>Instalar.bat</code>. <code>git pull</code> no toca <code>datos</code> ni la contraseña.</p>
 
-<h2>9. Desinstalar</h2>
+<h2>10. Desinstalar</h2>
 <ol>
 <li>Doble clic en <code>Desinstalar.bat</code>: detiene el servidor y quita el icono y el arranque automático.</li>
 <li>Si IT había creado la regla de firewall, la quitan ellos: <code>netsh advfirewall firewall delete rule name="Inventario Bajo Soppalco"</code></li>
 <li>Guardar una copia de <code>datos\Inventario_Bajo_Soppalco.xlsx</code> y borrar la carpeta.</li>
 </ol>
 
-<h2>10. Problemas frecuentes</h2>
+<h2>11. Problemas frecuentes</h2>
 <table>
 <tr><th style="width:36%">Síntoma</th><th>Solución</th></tr>
 <tr><td>Otra PC no abre la dirección</td><td>Verificar servidor encendido, IP correcta y misma red. Si sigue: firewall (punto 4).</td></tr>

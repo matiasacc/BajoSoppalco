@@ -73,7 +73,9 @@ MAESTRO_W = [9, 32, 10, 10, 10, 11, 10, 11, 10, 11, 12, 12, 11, 46, 18, 18]
 L = openpyxl.utils.get_column_letter
 # Movimientos: columnas
 MOV_HEAD = ["Fecha", "Tipo", "Código", "Insumo", "Cantidad", "Unidad", "Cant.\n(u. base)",
-            "Persona", "Origen del dato", "Observaciones"]
+            "Persona", "Origen del dato", "Observaciones", "Referencia\n(Nº OC / remito)"]
+MOV_REF = 11          # columna Referencia (se agregó después: en planillas viejas puede faltar el título)
+MOV_W = [11, 9, 9, 30, 9, 9, 10, 13, 26, 52, 16]
 STK_HEAD = ["Código", "Insumo", "Unidad base", "Stock inicial", "Entradas", "Salidas",
             "Stock actual\n(u. base)", "Empaque", "Cant. por\nempaque", "Empaques\ncerrados", "Sueltas\n(u. base)",
             "Stock mínimo", "Estado"]
@@ -136,16 +138,30 @@ def style_maestro_row(ws, r):
     ws.cell(row=r, column=M_BAR).number_format = "@"
 
 
-def write_movement(ws, r, fecha, tipo, cod, cant, unidad, persona, origen, obs):
+def write_movement(ws, r, fecha, tipo, cod, cant, unidad, persona, origen, obs, ref=None):
     insumo_f, base_f = mov_row_formulas(r)
-    vals = [fecha, tipo, cod, insumo_f, cant, unidad, base_f, persona, origen, obs]
+    vals = [fecha, tipo, cod, insumo_f, cant, unidad, base_f, persona, origen, obs, ref or None]
     for c, v in enumerate(vals, start=1):
         ws.cell(row=r, column=c).value = v
     style_row(ws, r, len(MOV_HEAD), wide_cols=(10,))
     ws.cell(row=r, column=1).number_format = "dd/mm/yyyy"
     ws.cell(row=r, column=1).alignment = Alignment(horizontal="center", vertical="center")
-    for c in (2, 3, 5, 6, 7):
+    for c in (2, 3, 5, 6, 7, MOV_REF):
         ws.cell(row=r, column=c).alignment = Alignment(horizontal="center", vertical="center")
+
+
+def asegurar_columna_ref(wb):
+    """Agrega el título de la columna Referencia en planillas creadas antes de que existiera.
+    No toca ningún dato. Devuelve True si cambió algo."""
+    ws = wb[SH_MOV]
+    if ws.cell(row=1, column=MOV_REF).value:
+        return False
+    c = ws.cell(row=1, column=MOV_REF, value=MOV_HEAD[MOV_REF - 1])
+    c.font, c.fill, c.border = F_H, FILL_H, BRD
+    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.column_dimensions[L(MOV_REF)].width = MOV_W[MOV_REF - 1]
+    ws.auto_filter.ref = f"A1:{L(MOV_REF)}{max(last_row(ws), 2)}"
+    return True
 
 
 def last_row(ws, col=1):
@@ -312,7 +328,7 @@ def crear_excel_vacio(path, ejemplo=True):
     mae = wb.create_sheet(SH_MAE)
     style_header(mae, MAESTRO_HEAD, MAESTRO_W)
     mae.row_dimensions[1].height = 45
-    style_header(mov, MOV_HEAD, [11, 9, 9, 30, 9, 9, 10, 13, 26, 52])
+    style_header(mov, MOV_HEAD, MOV_W)
     per = personas_sheet(wb)
     if ejemplo:
         for r, (cod, nom, sec, ubi, ub, emp, fac, sie, sis) in enumerate(EJEMPLO_INSUMOS, start=2):
@@ -440,7 +456,7 @@ def read_movements(wb, items):
         cant = num(g(5)) or 0
         out.append(dict(fecha=f, tipo=norm(g(2)).upper(), cod=cod, cant=cant, unidad=norm(g(6)),
                         base=base_qty(items[cod], cant, norm(g(6))), persona=norm(g(8)),
-                        origen=norm(g(9)), obs=norm(g(10)), fila=r))
+                        origen=norm(g(9)), obs=norm(g(10)), ref=norm(g(MOV_REF)), fila=r))
     return out
 
 
@@ -891,7 +907,7 @@ def main():
                 r += 1
                 write_movement(ws, r, m["fecha"], m["tipo"], m["cod"], m["cant"], m["unidad"],
                                m["persona"], f"CSV {hoy:%d/%m/%Y}", m["obs"])
-            ws.auto_filter.ref = f"A1:J{r}"
+            ws.auto_filter.ref = f"A1:K{r}"
             rebuild_stock(wb)
             try:
                 guardar(wb)
