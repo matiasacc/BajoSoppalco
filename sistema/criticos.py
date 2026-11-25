@@ -24,7 +24,7 @@ MAX_CRITICOS = 50
 # ---------------------------------------------------------------- estructura de las hojas
 # Críticos
 (C_COD, C_INS, C_PROV, C_LT, C_MIN, C_SEG, C_MULT, C_INI, C_DCUB, C_OBS) = range(1, 11)
-CRI_HEAD = ["Código", "Insumo", "Proveedor", "Lead time\n(días háb.)", "Stock mínimo fijo\n(u. base)",
+CRI_HEAD = ["Código", "Insumo", "Proveedor\n(del Maestro)", "Lead time\n(días háb.)", "Stock mínimo fijo\n(u. base)",
             "Seguridad\n(días de consumo)", "Múltiplo de compra\n(u. base)", "Consumo semanal\ninicial estimado\n(u. base)",
             "Días a cubrir\npor pedido\n(días háb.)", "Observaciones"]
 CRI_W = [12, 32, 18, 10, 12, 12, 12, 14, 12, 36]
@@ -67,7 +67,9 @@ def asegurar_hojas(wb):
     """Crea las hojas de críticos si faltan y el título de la columna Referencia en Movimientos.
     No modifica datos existentes. Devuelve True si cambió algo."""
     cambio = cm.asegurar_columna_ref(wb)
-    _, n1 = _hoja(wb, SH_CRI, CRI_HEAD, CRI_W)
+    cambio = cm.asegurar_columnas_maestro(wb) or cambio
+    ws_c, n1 = _hoja(wb, SH_CRI, CRI_HEAD, CRI_W)
+    cambio = _migrar_proveedor(wb, ws_c) or cambio
     _, n2 = _hoja(wb, SH_OC, OC_HEAD, OC_W)
     ws, n3 = _hoja(wb, SH_CFG, ["Parámetro", "Valor", "Qué hace"], [36, 10, 80])
     if n3:
@@ -77,6 +79,30 @@ def asegurar_hojas(wb):
             cm.style_row(ws, i, 3, wide_cols=(3,))
             ws.cell(row=i, column=2).fill = cm.FILL_IN
     return cambio or n1 or n2 or n3
+
+
+def _prov_f(r):
+    return f'=IFERROR(INDEX({cm.SH_MAE}!${cm.L(cm.M_PROV)}:${cm.L(cm.M_PROV)},MATCH($A{r},{cm.SH_MAE}!$A:$A,0))&"","")'
+
+
+def _migrar_proveedor(wb, ws):
+    """Versión anterior: el proveedor se escribía en Críticos. Ahora vive en el Maestro.
+    Si había uno escrito a mano, se pasa al Maestro (solo si allí está vacío) y la celda queda con fórmula."""
+    mae, cambio = wb[cm.SH_MAE], False
+    filas_mae = {cm.norm(mae.cell(row=r, column=cm.M_COD).value).upper(): r for r in range(2, cm.last_row(mae) + 1)}
+    for r in range(2, cm.last_row(ws) + 1):
+        cod = cm.norm(ws.cell(row=r, column=C_COD).value).upper()
+        v = ws.cell(row=r, column=C_PROV).value
+        if not cod or (isinstance(v, str) and v.startswith("=")):
+            continue
+        if cm.norm(v) and cod in filas_mae and not cm.norm(mae.cell(row=filas_mae[cod], column=cm.M_PROV).value):
+            mae.cell(row=filas_mae[cod], column=cm.M_PROV).value = cm.norm(v)
+        ws.cell(row=r, column=C_PROV).value = _prov_f(r)
+        cambio = True
+    if cambio or ws.cell(row=1, column=C_PROV).value != CRI_HEAD[C_PROV - 1]:
+        ws.cell(row=1, column=C_PROV).value = CRI_HEAD[C_PROV - 1]
+        cambio = True
+    return cambio
 
 
 def _insumo_f(col_cod, r):
@@ -153,7 +179,7 @@ def leer_criticos(wb):
         cod = cm.norm(g(C_COD)).upper()
         if not cod:
             continue
-        out[cod] = dict(cod=cod, prov=cm.norm(g(C_PROV)), lt=_num(g(C_LT)), min=_num(g(C_MIN)),
+        out[cod] = dict(cod=cod, lt=_num(g(C_LT)), min=_num(g(C_MIN)),
                         seg=_num(g(C_SEG)), mult=_num(g(C_MULT)), ini=_num(g(C_INI)), dcub=_num(g(C_DCUB)),
                         obs=cm.norm(g(C_OBS)), fila=r)
     return out
@@ -232,7 +258,7 @@ def calcular(items, movs, st, cri, ocs, cfg, hoy=None):
     filas = []
     for cod, p in cri.items():
         it, s = items.get(cod), st.get(cod)
-        f = dict(cod=cod, ins=it["ins"] if it else "", ub=it["ub"] if it else "", prov=p["prov"],
+        f = dict(cod=cod, ins=it["ins"] if it else "", ub=it["ub"] if it else "", prov=it["prov"] if it else "",
                  lt=p["lt"], min=p["min"], seg=p["seg"], mult=p["mult"], ini=p["ini"], dcub=p["dcub"], obs=p["obs"])
         alertas = []
         if not it:
@@ -335,8 +361,7 @@ def guardar_critico(wb, items, cod, campos):
         raise ValueError(f"El código {cod or '(vacío)'} no está en el Maestro: darlo de alta ahí primero.")
     ws = wb[SH_CRI]
     cri = leer_criticos(wb)
-    vals = dict(prov=cm.norm(campos.get("prov"))[:60],
-                lt=_val_num(campos.get("lt"), "Lead time", 0, entero=True, opcional=False),
+    vals = dict(lt=_val_num(campos.get("lt"), "Lead time", 0, entero=True, opcional=False),
                 min=_val_num(campos.get("min"), "Stock mínimo fijo", 0),
                 seg=_val_num(campos.get("seg"), "Seguridad", 0),
                 mult=_val_num(campos.get("mult"), "Múltiplo de compra", 1) or 1,
@@ -349,7 +374,7 @@ def guardar_critico(wb, items, cod, campos):
         if len(cri) >= MAX_CRITICOS:
             raise ValueError(f"Máximo {MAX_CRITICOS} insumos críticos.")
         r = cm.last_row(ws) + 1
-    for c, v in ((C_COD, cod), (C_INS, _insumo_f("A", r)), (C_PROV, vals["prov"] or None), (C_LT, vals["lt"]),
+    for c, v in ((C_COD, cod), (C_INS, _insumo_f("A", r)), (C_PROV, _prov_f(r)), (C_LT, vals["lt"]),
                  (C_MIN, vals["min"]), (C_SEG, vals["seg"]), (C_MULT, vals["mult"]), (C_INI, vals["ini"]),
                  (C_DCUB, vals["dcub"]), (C_OBS, vals["obs"] or None)):
         ws.cell(row=r, column=c).value = v
@@ -373,6 +398,7 @@ def borrar_critico(wb, items, movs, st, cod):
     for rr in range(r, cm.last_row(ws) + 1):             # la fórmula de Insumo depende de la fila
         if ws.cell(row=rr, column=C_COD).value:
             ws.cell(row=rr, column=C_INS).value = _insumo_f("A", rr)
+            ws.cell(row=rr, column=C_PROV).value = _prov_f(rr)
 
 
 def guardar_config(wb, campos):

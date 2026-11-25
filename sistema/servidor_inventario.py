@@ -442,14 +442,14 @@ def api_admin_maestro_get():
         it, s = items[c], st[c]
         out.append(dict(cod=c, ins=it["ins"], sec=it["sec"], ubi=it["ubi"], ub=it["ub"], emp=it["emp"],
                         fac=it["fac"], emp2=it["emp2"], fac2=it["fac2"], bar=it["bar"], sie=it["sie"], sis=it["sis"], min=it["min"], obs=it["obs"],
-                        act=None if s["falta"] else s["act"], estado=s["estado"], nmov=nmov.get(c, 0),
+                        prov=it["prov"], palt=it["palt"], act=None if s["falta"] else s["act"], estado=s["estado"], nmov=nmov.get(c, 0),
                         foto=foto_version(c)))
     return 200, dict(items=out)
 
 
 CAMPOS = {"ins": cm.M_INS, "sec": cm.M_SEC, "ubi": cm.M_UBI, "ub": cm.M_UB, "emp": cm.M_EMP,
           "fac": cm.M_FAC, "emp2": cm.M_EMP2, "fac2": cm.M_FAC2, "sie": cm.M_SIE, "sis": cm.M_SIS,
-          "min": cm.M_MIN, "obs": cm.M_OBS, "bar": cm.M_BAR}
+          "min": cm.M_MIN, "obs": cm.M_OBS, "bar": cm.M_BAR, "prov": cm.M_PROV, "palt": cm.M_PALT}
 NUMERICOS = {"fac", "fac2", "sie", "sis", "min"}
 
 

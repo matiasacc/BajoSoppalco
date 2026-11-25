@@ -265,11 +265,11 @@ tr.flash td{animation:fl 1s ease-out}
    <div id="amsg" class="msg"></div>
 
    <div id="s-maestro">
-     <div class="bar"><input id="mf" placeholder="Filtrar por código, nombre o sector" style="max-width:320px;margin:0">
+     <div class="bar"><input id="mf" placeholder="Filtrar por código, nombre, sector o proveedor" style="max-width:320px;margin:0">
      <span class="mut">Editar en la celda y tocar Guardar en la fila. Las cantidades van en la unidad base.</span></div>
      <div class="tw"><table class="mt">
       <thead><tr><th>Código</th><th>Insumo</th><th>Sector</th><th>Ubic.</th><th>Unidad base</th><th>Empaque 1</th><th>Cant. x emp. 1</th><th>Empaque 2</th><th>Cant. x emp. 2</th>
-      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo (u. base)</th><th>Observaciones</th><th>Código de barras</th><th>Foto</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
+      <th>Stock ini. (empaques 1)</th><th>Stock ini. (sueltas)</th><th>Stock mínimo (u. base)</th><th>Observaciones</th><th>Código de barras</th><th>Proveedor asignado</th><th>Proveedor alternativo</th><th>Foto</th><th>Stock actual</th><th>Mov.</th><th></th></tr></thead>
       <tbody id="mt"></tbody>
      </table></div>
    </div>
@@ -363,11 +363,11 @@ tr.flash td{animation:fl 1s ease-out}
          <button id="cgsave" class="btn pri" type="button">Guardar parámetros generales</button>
        </div>
        <div class="tw"><table class="mt">
-        <thead><tr><th>Código</th><th>Insumo</th><th>Unidad</th><th>Proveedor</th><th>Lead time<br>(días háb.)</th><th>Stock mínimo fijo</th><th>Seguridad<br>(días de consumo)</th>
+        <thead><tr><th>Código</th><th>Insumo</th><th>Unidad</th><th>Proveedor<br>(del Maestro)</th><th>Lead time<br>(días háb.)</th><th>Stock mínimo fijo</th><th>Seguridad<br>(días de consumo)</th>
         <th>Múltiplo de compra</th><th>Consumo semanal<br>inicial (opcional)</th><th>Días a cubrir<br>(vacío = general)</th><th>Observaciones</th><th></th></tr></thead>
         <tbody id="cpt"></tbody>
        </table></div>
-       <p class="mut" style="font-size:12px">Cantidades en la unidad base del insumo (la misma del stock). El consumo semanal inicial se usa solo mientras no haya salidas en el período. Hasta <span id="cmax">50</span> insumos.</p>
+       <p class="mut" style="font-size:12px">Cantidades en la unidad base del insumo (la misma del stock). El proveedor se carga en el Maestro. El consumo semanal inicial se usa solo mientras no haya salidas en el período. Hasta <span id="cmax">50</span> insumos.</p>
      </div>
    </div>
 
@@ -791,16 +791,16 @@ document.querySelectorAll(".subnav button[data-sub]").forEach(b => b.onclick = (
   if(b.dataset.sub==="etiq") loadEtiq();
 });
 
-const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","o"],["bar",""]];
+const MF = [["ins","w"],["sec",""],["ubi",""],["ub",""],["emp",""],["fac","n"],["emp2",""],["fac2","n"],["sie","n"],["sis","n"],["min","n"],["obs","o"],["bar",""],["prov","o"],["palt","o"]];
 async function loadMaestro(){
   const r = await api("/api/admin/maestro"); if(!r.ok){ if(r.status!==401) msg($("amsg"), esc(r.d.error), "err"); return; }
   M = r.d.items; renderMaestro();
 }
 const PH = {ins:"Insumo", sec:"Sector", ubi:"Ubic.", ub:"Unidad base", emp:"Empaque 1", fac:"Cant.", emp2:"Empaque 2", fac2:"Cant.",
-            sie:"Cajas", sis:"Sueltas", min:"Mínimo (u. base)", obs:"Observaciones", bar:"Cód. barras"};
+            sie:"Cajas", sis:"Sueltas", min:"Mínimo (u. base)", obs:"Observaciones", bar:"Cód. barras", prov:"Proveedor asignado", palt:"Alternativo"};
 function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls}" value="${esc(v??"")}" title="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal"':""}></td>`; }
 function renderMaestro(){
-  const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
+  const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi+" "+(i.prov||"")+" "+(i.palt||""), $("mf").value));
   let h = `<tr><td><input data-f="cod" placeholder="NUEVO" maxlength="30" title="Hasta 30 caracteres: letras, números, espacio y - . _ / + # ( )" style="min-width:110px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
   h += rows.map(i => `<tr data-c="${esc(i.cod)}" class="${claseEstado(i.estado)}" title="${esc(i.estado)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
        `<td class=c style="white-space:nowrap">${i.foto ? `<img class="th" src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" data-fsub title="Cambiar foto" alt=""><button class="btn sm" data-fdel type="button" title="Quitar foto">✕</button>` : `<button class="btn sm" data-fsub type="button">Subir</button>`}</td>` +
@@ -1066,15 +1066,15 @@ function editarOC(tr, o){
   };
 }
 
-const CP = [["prov","o"],["lt","n"],["min","n"],["seg","n"],["mult","n"],["ini","n"],["dcub","n"],["obs","o"]];
-const CPH = {prov:"Proveedor", lt:"días", min:"un.", seg:"días", mult:"1", ini:"—", dcub:String(15), obs:"—"};
+const CP = [["lt","n"],["min","n"],["seg","n"],["mult","n"],["ini","n"],["dcub","n"],["obs","o"]];
+const CPH = {lt:"días", min:"un.", seg:"días", mult:"1", ini:"—", dcub:String(15), obs:"—"};
 function renderCrPar(){
   const crit = new Set(CR.filas.map(f => f.cod));
   const libres = CR.insumos.filter(i => !crit.has(i.cod));
   const inp = (k, v, cls, ph) => `<td><input data-f="${k}" class="${cls}" value="${esc(v ?? "")}" ${ph ? `placeholder="${k==="dcub" ? CR.cfg.dias_cubrir : CPH[k]}"` : ""} ${cls==="n"?'inputmode="decimal"':""}></td>`;
-  let h = CR.filas.length < CR.max ? `<tr class="dirty" data-nuevo><td colspan=3><select data-f=cod style="margin:0;padding:4px;width:100%"><option value="">Agregar insumo del Maestro…</option>${libres.map(i => `<option value="${esc(i.cod)}">${esc(i.cod)} · ${esc(i.ins)}</option>`).join("")}</select></td>`
+  let h = CR.filas.length < CR.max ? `<tr class="dirty" data-nuevo><td colspan=4><select data-f=cod style="margin:0;padding:4px;width:100%"><option value="">Agregar insumo del Maestro…</option>${libres.map(i => `<option value="${esc(i.cod)}">${esc(i.cod)} · ${esc(i.ins)}</option>`).join("")}</select></td>`
      + CP.map(([k, c]) => inp(k, "", c, true)).join("") + `<td><button class="btn sm pri" data-add type=button>Agregar</button></td></tr>` : "";
-  h += [...CR.filas].sort((a, b) => a.cod.localeCompare(b.cod)).map(f => `<tr data-c="${esc(f.cod)}"><td><b>${esc(f.cod)}</b></td><td>${esc(f.ins)}</td><td>${esc(f.ub)}</td>`
+  h += [...CR.filas].sort((a, b) => a.cod.localeCompare(b.cod)).map(f => `<tr data-c="${esc(f.cod)}"><td><b>${esc(f.cod)}</b></td><td>${esc(f.ins)}</td><td>${esc(f.ub)}</td><td class=mut>${esc(f.prov||"—")}</td>`
      + CP.map(([k, c]) => inp(k, f[k], c, k === "dcub")).join("")
      + `<td style="white-space:nowrap"><button class="btn sm" data-g disabled type=button>Guardar</button> <button class="btn sm" data-b type=button>Quitar</button></td></tr>`).join("");
   $("cpt").innerHTML = h;

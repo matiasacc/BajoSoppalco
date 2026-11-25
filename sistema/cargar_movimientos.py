@@ -62,14 +62,14 @@ SH_MAE, SH_MOV, SH_STK = "Maestro", "Movimientos", "Stock"
 
 # Maestro: columnas
 (M_COD, M_INS, M_SEC, M_UBI, M_UB, M_EMP, M_FAC, M_EMP2, M_FAC2,
- M_SIE, M_SIS, M_SIT, M_MIN, M_OBS, M_ORI, M_BAR) = range(1, 17)
+ M_SIE, M_SIS, M_SIT, M_MIN, M_OBS, M_ORI, M_BAR, M_PROV, M_PALT) = range(1, 19)
 MAESTRO_HEAD = ["Código", "Insumo", "Sector", "Ubicación", "Unidad base",
                 "Empaque 1\n(ej. Caja)", "Cant. por\nempaque 1\n(u. base)",
                 "Empaque 2\n(ej. Bulto)", "Cant. por\nempaque 2\n(u. base)",
                 "Stock inicial\n(empaques 1)", "Stock inicial\n(sueltas, u. base)",
                 "Stock inicial\ntotal (u. base)", "Stock mínimo\n(u. base)", "Observaciones", "Origen",
-                "Código de barras\n(vacío = usa Código)"]
-MAESTRO_W = [9, 32, 10, 10, 10, 11, 10, 11, 10, 11, 12, 12, 11, 46, 18, 18]
+                "Código de barras\n(vacío = usa Código)", "Proveedor\nasignado", "Proveedor\nalternativo"]
+MAESTRO_W = [9, 32, 10, 10, 10, 11, 10, 11, 10, 11, 12, 12, 11, 46, 18, 18, 26, 26]
 L = openpyxl.utils.get_column_letter
 # Movimientos: columnas
 MOV_HEAD = ["Fecha", "Tipo", "Código", "Insumo", "Cantidad", "Unidad", "Cant.\n(u. base)",
@@ -162,6 +162,19 @@ def asegurar_columna_ref(wb):
     ws.column_dimensions[L(MOV_REF)].width = MOV_W[MOV_REF - 1]
     ws.auto_filter.ref = f"A1:{L(MOV_REF)}{max(last_row(ws), 2)}"
     return True
+
+
+def asegurar_columnas_maestro(wb):
+    """Agrega los títulos de columnas nuevas del Maestro (proveedores) en planillas viejas. No toca datos."""
+    ws, cambio = wb[SH_MAE], False
+    for c in (M_PROV, M_PALT):
+        if not ws.cell(row=1, column=c).value:
+            cell = ws.cell(row=1, column=c, value=MAESTRO_HEAD[c - 1])
+            cell.font, cell.fill, cell.border = F_H, FILL_H, BRD
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            ws.column_dimensions[L(c)].width = MAESTRO_W[c - 1]
+            cambio = True
+    return cambio
 
 
 def last_row(ws, col=1):
@@ -419,7 +432,8 @@ def read_maestro(wb):
         items[cod] = dict(cod=cod, ins=norm(g(M_INS)), sec=norm(g(M_SEC)), ubi=norm(g(M_UBI)),
                           ub=norm(g(M_UB)), emp=norm(g(M_EMP)), fac=fac, emp2=norm(g(M_EMP2)), fac2=fac2,
                           ini=ini, sie=sie, sis=sis,
-                          min=num(g(M_MIN)), obs=norm(g(M_OBS)), bar=norm(g(M_BAR)), fila=r)
+                          min=num(g(M_MIN)), obs=norm(g(M_OBS)), bar=norm(g(M_BAR)),
+                          prov=norm(g(M_PROV)), palt=norm(g(M_PALT)), fila=r)
     return items
 
 

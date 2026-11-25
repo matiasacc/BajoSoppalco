@@ -134,6 +134,7 @@ consumo por insumo y por sector, <b>salidas por mes</b> (últimos 6 meses, para 
 <tr><td>Insumos críticos</td><td>Seguimiento de los insumos cuya falta frena la producción: avisa cuándo emitir una orden de compra y cuánto pedir. Ver punto 7.</td></tr>
 <tr><td>Maestro</td><td>Alta / edición de insumos: unidad base, empaques y cantidades, stock inicial, mínimo, <b>código de barras</b>. Borrar solo si no tiene movimientos.
 <b>Código</b>: formato libre, hasta 30 caracteres (letras, números, espacio y <code>- . _ / + # ( )</code>). No se aceptan dos códigos que solo difieran en signos (ej. <code>30107-000012G</code> y <code>30107000012G</code>), porque la lectora no los distingue.
+<b>Proveedor asignado</b> y <b>alternativo</b>: se usan también en Insumos críticos.
 Columna <b>Foto</b>: <i>Subir</i> una foto (se achica sola); ✕ la quita.</td></tr>
 <tr><td>Movimientos</td><td><b>Editar</b> (E/S, cantidad, unidad, persona, Nº de OC / remito; queda anotado) o <b>Anular</b> (pasa a la hoja <i>Anulados</i> con motivo).</td></tr>
 <tr><td>Personas</td><td>Alta con legajo y nombre; <b>Definir contraseña</b> (la escribe la persona en campos ocultos, el administrador no la ve); desactivar o borrar.</td></tr>
@@ -149,7 +150,7 @@ Contraseña de Administración olvidada: borrar <code>sistema\config_inventario.
 <p>Administración → <b>Insumos críticos</b>. Tres vistas: <b>Panel</b>, <b>Órdenes de compra</b> y <b>Parámetros</b>. Solo lee los movimientos y el stock del programa; no los modifica.
 Todas las cantidades van en la <b>unidad base</b> del insumo. Días hábiles: lunes a viernes. La fecha de referencia es siempre hoy.</p>
 <ol>
-<li><b>Parámetros</b>: agregar cada insumo crítico (hasta 50, tienen que existir en el Maestro) con lead time (días hábiles), stock mínimo fijo, seguridad (días de consumo),
+<li><b>Parámetros</b>: agregar cada insumo crítico (hasta 50, tienen que existir en el Maestro; el proveedor se toma del Maestro) con lead time (días hábiles), stock mínimo fijo, seguridad (días de consumo),
 múltiplo de compra y, opcionales, consumo semanal inicial estimado y días a cubrir por pedido. Arriba, los parámetros generales: semanas de historial (4), días hábiles por semana (5),
 margen de pre-alerta (20 %) y días a cubrir por defecto (15).</li>
 <li><b>Panel</b>: un renglón por insumo, ordenado por urgencia, con contadores por estado (tocar uno filtra) y la cantidad de OC atrasadas.
