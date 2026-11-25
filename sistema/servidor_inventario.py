@@ -190,11 +190,16 @@ def snapshot():
 
 # ---------------------------------------------------------------- fotos de productos
 FOTOS = os.path.join(cm.DATOS, "fotos")
-RE_COD = re.compile(r"^[A-Z0-9][A-Z0-9\-]{0,11}$")
+RE_FOTO_SIMPLE = re.compile(r"[A-Z0-9\-]{1,30}")
 
 
 def foto_path(cod):
-    return os.path.join(FOTOS, f"{cod}.jpg")
+    """Archivo de la foto. Los códigos simples usan su nombre tal cual (como siempre); los que tienen
+    otros signos se guardan con un nombre seguro para Windows (sin / ni espacios) más un sufijo único."""
+    if RE_FOTO_SIMPLE.fullmatch(cod):
+        return os.path.join(FOTOS, f"{cod}.jpg")
+    seguro = re.sub(r"[^A-Z0-9\-]", "_", cod)
+    return os.path.join(FOTOS, f"{seguro}_{hashlib.sha1(cod.encode('utf-8')).hexdigest()[:8]}.jpg")
 
 
 def foto_version(cod):
@@ -206,8 +211,6 @@ def foto_version(cod):
 def api_admin_foto(body):
     import base64
     cod = cm.norm(body.get("cod")).upper()
-    if not RE_COD.match(cod):
-        return 400, dict(error="Código inválido.")
     with LOCK:
         items = cm.read_maestro(openpyxl.load_workbook(cm.XLSX))
     if cod not in items:
@@ -532,11 +535,17 @@ def api_admin_maestro_post(body):
                 mae.cell(row=r, column=CAMPOS[k]).value = v
             msg = f"{cod} actualizado."
         elif accion == "nuevo":
-            cod = cm.norm(body.get("cod")).upper()
-            if not re.fullmatch(r"[A-Z0-9][A-Z0-9\-]{1,11}", cod):
-                return 400, dict(error="Código inválido (letras, números y guion; ej. CIN-02).")
+            cod, e = cm.limpiar_codigo(body.get("cod"))
+            if e:
+                return 400, dict(error=e)
             if cod in items:
                 return 400, dict(error=f"El código {cod} ya existe.")
+            # la lectora compara solo letras y números: no puede haber dos códigos que solo difieran en signos
+            nb = cm.norm_bar(cod)
+            for c2, it2 in items.items():
+                if nb in (cm.norm_bar(c2), cm.norm_bar(it2["bar"])):
+                    return 400, dict(error=f"El código {cod} se confunde con {c2} al escanear (solo cambian signos). "
+                                           "Usar otro código o cargarle un código de barras propio.")
             campos, err = _limpiar_campos(body.get("campos") or {})
             if not campos.get("ins"):
                 err.append("Falta el nombre del insumo")
@@ -890,9 +899,10 @@ class H(BaseHTTPRequestHandler):
             with open(APP, encoding="utf-8") as fh:
                 return self._send(200, fh.read(), "text/html; charset=utf-8")
         if path.startswith("/foto/"):
-            cod = path[len("/foto/"):].upper()
+            from urllib.parse import unquote
+            cod = unquote(path[len("/foto/"):]).upper()
             p = foto_path(cod)
-            if not RE_COD.match(cod) or not os.path.isfile(p):
+            if not cod or not os.path.isfile(p):
                 return self._send(404, dict(error="Sin foto"))
             with open(p, "rb") as fh:
                 return self._send(200, fh.read(), "image/jpeg", {"Cache-Control": "max-age=86400"})

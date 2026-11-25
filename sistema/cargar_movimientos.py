@@ -423,6 +423,29 @@ def read_maestro(wb):
     return items
 
 
+COD_MAX = 30
+COD_PERMITIDOS = "letras, números, espacio y - . _ / + # ( )"
+RE_CODIGO = re.compile(r"[A-Z0-9 \-._/+#()]+")
+
+
+def limpiar_codigo(s):
+    """Normaliza un código de insumo nuevo y dice si sirve. Devuelve (codigo, error).
+    Formato libre, con tres límites: caracteres que la etiqueta de código de barras puede imprimir,
+    nada que Excel tome como comodín en las búsquedas (* ? ~) y al menos una letra o número."""
+    cod = " ".join(norm(s).upper().split())
+    cod = cod.lstrip("´'`").strip()          # restos de Excel: '016515 (apóstrofo para forzar texto)
+    if not cod:
+        return cod, "Falta el código."
+    if len(cod) > COD_MAX:
+        return cod, f"El código tiene más de {COD_MAX} caracteres."
+    if not RE_CODIGO.fullmatch(cod):
+        malos = "".join(sorted({c for c in cod if not RE_CODIGO.fullmatch(c)}))
+        return cod, f"El código tiene caracteres no permitidos ({malos}). Se puede usar: {COD_PERMITIDOS}."
+    if not norm_bar(cod):
+        return cod, "El código tiene que tener al menos una letra o un número."
+    return cod, None
+
+
 def norm_bar(s):
     """Normaliza un código leído: solo letras y números, en mayúsculas.
     (Evita problemas de la lectora con '-' u otros signos según la distribución de teclado.)"""

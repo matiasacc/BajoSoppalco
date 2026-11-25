@@ -61,8 +61,8 @@ iframe{width:100%;height:calc(100vh - 140px);border:1px solid var(--ln);backgrou
 .mt input{margin:0;padding:4px;min-width:0;width:100%;font-size:13px;border-color:transparent;background:transparent}
 .mt input.n{text-align:right;min-width:46px}
 /* columnas fijas a la izquierda (código e insumo / legajo y nombre) */
-.mt th:first-child,.mt td:first-child{position:sticky;left:0;z-index:1;background:var(--bg);min-width:80px;width:80px}
-.mt th:nth-child(2),.mt td:nth-child(2){position:sticky;left:80px;z-index:1;background:var(--bg);box-shadow:2px 0 0 var(--ln)}
+.mt th:first-child,.mt td:first-child{position:sticky;left:0;z-index:1;background:var(--bg);min-width:125px;width:125px}
+.mt th:nth-child(2),.mt td:nth-child(2){position:sticky;left:125px;z-index:1;background:var(--bg);box-shadow:2px 0 0 var(--ln)}
 .mt th:first-child,.mt th:nth-child(2){background:var(--hd);z-index:2}
 .mt input:hover{border-color:var(--ln)}
 .mt tr.dirty td{background:var(--sel)}
@@ -801,7 +801,7 @@ const PH = {ins:"Insumo", sec:"Sector", ubi:"Ubic.", ub:"Unidad base", emp:"Empa
 function cell(k, v, cls, ph){ return `<td><input data-f="${k}" class="${cls}" value="${esc(v??"")}" title="${esc(v??"")}" ${ph?`placeholder="${PH[k]||""}"`:""} ${cls==="n"?'inputmode="decimal"':""}></td>`; }
 function renderMaestro(){
   const rows = M.filter(i => hasAll(i.cod+" "+i.ins+" "+i.sec+" "+i.ubi, $("mf").value));
-  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" style="min-width:80px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
+  let h = `<tr><td><input data-f="cod" placeholder="NUEVO" maxlength="30" title="Hasta 30 caracteres: letras, números, espacio y - . _ / + # ( )" style="min-width:110px"></td>` + MF.map(([k,c]) => cell(k,"",c,true)).join("") + `<td></td><td></td><td></td><td><button class="btn sm pri" data-new type="button">Agregar</button></td></tr>`;
   h += rows.map(i => `<tr data-c="${esc(i.cod)}" class="${claseEstado(i.estado)}" title="${esc(i.estado)}"><td><b>${esc(i.cod)}</b></td>` + MF.map(([k,c]) => cell(k,i[k],c)).join("") +
        `<td class=c style="white-space:nowrap">${i.foto ? `<img class="th" src="/foto/${encodeURIComponent(i.cod)}?v=${i.foto}" data-fsub title="Cambiar foto" alt=""><button class="btn sm" data-fdel type="button" title="Quitar foto">✕</button>` : `<button class="btn sm" data-fsub type="button">Subir</button>`}</td>` +
        `<td class="n st">${i.act===null?"*":fmt(i.act)}</td><td class=n>${i.nmov}</td><td style="white-space:nowrap"><button class="btn sm" data-save disabled type="button">Guardar</button> ${i.nmov?"":`<button class="btn sm" data-del type="button">Borrar</button>`}</td></tr>`).join("");
